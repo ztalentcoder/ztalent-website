@@ -1,0 +1,44 @@
+.heading {
+  max-width: 640px;
+  margin: 0 auto 42px;
+  text-align: center;
+}
+
+.left {
+  margin-right: auto;
+  margin-left: 0;
+  text-align: left;
+}
+
+.eyebrow {
+  margin: 0 0 4px;
+  color: var(--blue);
+  font-size: 0.81rem;
+  font-weight: 700;
+}
+
+.heading h2 {
+  margin: 0 0 12px;
+  color: var(--ink);
+  font-size: clamp(1.625rem, 3.6vw, 2.375rem);
+  line-height: 1.2;
+}
+
+.description {
+  color: var(--muted);
+}
+
+.heading::after {
+  display: block;
+  width: 56px;
+  height: 4px;
+  border-radius: 2px;
+  margin: 16px auto 0;
+  background: var(--blue);
+  content: "";
+}
+
+.left::after {
+  margin-right: auto;
+  margin-left: 0;
+}

@@ -1,0 +1,64 @@
+.social {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.social a {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 50%;
+  background: #ffffff;
+  color: #051728;
+  transition: transform 150ms ease;
+}
+
+.social a:hover {
+  transform: translateY(-2px);
+}
+
+.social svg {
+  display: block;
+  width: 19px;
+  height: 19px;
+  fill: currentColor;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
+.social .whatsapp {
+  color: #25d366;
+}
+
+.social .facebook {
+  color: #1877f2;
+}
+
+.social .instagram {
+  color: #c13584;
+}
+
+.social .youtube {
+  color: #ff0000;
+}
+
+.social a:nth-child(3) svg {
+  fill: none;
+}
+
+.footer a {
+  width: 40px;
+  height: 40px;
+  border: 1px solid #16395f;
+  background: #ffffff;
+}
+
+.footer svg {
+  width: 21px;
+  height: 21px;
+}

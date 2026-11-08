@@ -1,0 +1,550 @@
+.container {
+  width: min(1140px, 100%);
+  margin: 0 auto;
+  padding: 0 22px;
+}
+
+.hero {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  height: clamp(560px, 70vh, 700px);
+  min-height: 560px;
+  align-items: center;
+  padding: 72px 0 142px;
+  background:
+    radial-gradient(circle at 80% 30%, #1b5fb8 0, transparent 45%),
+    linear-gradient(135deg, #061a31 10%, #0c3269 60%, #1469c4);
+  color: #ffffff;
+}
+
+.heroImage {
+  position: absolute;
+  z-index: 0;
+  inset: -8px;
+  background-position: center;
+  background-size: cover;
+  filter: blur(1.5px);
+  opacity: 0;
+  transform: scale(1.01);
+  transition: opacity 900ms ease;
+  pointer-events: none;
+}
+
+.heroImageActive {
+  opacity: 1;
+}
+
+.hero::before {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  background-image: radial-gradient(rgb(255 255 255 / 12%) 1.4px, transparent 1.4px);
+  background-size: 26px 26px;
+  content: "";
+  mask-image: linear-gradient(90deg, transparent, #000 70%);
+  pointer-events: none;
+}
+
+.hero::after {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    rgb(4 20 40 / 62%) 0%,
+    rgb(4 20 40 / 46%) 58%,
+    rgb(4 20 40 / 32%) 100%
+  );
+  content: "";
+  pointer-events: none;
+}
+
+.heroContent {
+  position: relative;
+  z-index: 3;
+  width: min(1140px, 100%);
+  margin: 0 auto;
+  padding: 0 22px;
+}
+
+.heroCopy {
+  animation: heroCopyEnter 420ms ease both;
+}
+
+@keyframes heroCopyEnter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.heroCopy h1 {
+  max-width: 1060px;
+  min-height: 2.12em;
+  margin: 0 0 22px;
+  color: #ffffff;
+  font-size: clamp(3rem, 5.2vw, 4.375rem);
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  line-height: 1.06;
+}
+
+.heroCopy p {
+  max-width: 700px;
+  min-height: 3.4em;
+  margin: 0 0 30px;
+  color: #d6e6f7;
+  font-size: 1.0625rem;
+  line-height: 1.7;
+}
+
+.heroActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.heroActions a {
+  flex: 0 0 auto;
+}
+
+.heroCopy a {
+  color: #ffffff;
+}
+
+.heroCopy .heroActions a:first-child {
+  background: var(--blue);
+  border-color: var(--blue);
+}
+
+.heroCopy .heroActions a:first-child:hover {
+  background: #167bc9;
+}
+
+.heroIndicators {
+  position: absolute;
+  z-index: 4;
+  right: 0;
+  bottom: 88px;
+  left: 0;
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+.heroIndicators button {
+  width: 10px;
+  height: 10px;
+  border: 1px solid rgb(255 255 255 / 82%);
+  border-radius: 50%;
+  padding: 0;
+  background: rgb(255 255 255 / 42%);
+  cursor: pointer;
+  transition: width 180ms ease, border-radius 180ms ease, background-color 180ms ease;
+}
+
+.heroIndicators button:hover,
+.heroIndicators button:focus-visible {
+  background: #ffffff;
+}
+
+.heroIndicators button:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: 3px;
+}
+
+.heroIndicators .heroIndicatorActive {
+  width: 26px;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.section {
+  padding: 78px 0;
+}
+
+.softSection {
+  background: var(--soft);
+}
+
+.cardGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 26px;
+}
+
+.card {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--card);
+  box-shadow: var(--shadow);
+  transition: transform 200ms ease;
+}
+
+.cardImage {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  background: var(--soft);
+}
+
+.cardImage img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.imageFallback {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  place-items: center;
+  background:
+    radial-gradient(circle at 75% 25%, rgb(30 144 232 / 18%), transparent 42%),
+    linear-gradient(135deg, var(--soft), var(--card));
+  color: var(--deep-blue);
+}
+
+.imageFallback svg {
+  width: 52px;
+  height: 52px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.6;
+}
+
+.cardBody {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 22px 24px 24px;
+}
+
+.card:hover {
+  transform: translateY(-4px);
+}
+
+.pillarIcon {
+  display: grid;
+  width: 54px;
+  height: 54px;
+  place-items: center;
+  margin-bottom: 18px;
+  border-radius: 15px;
+  background: linear-gradient(135deg, var(--blue), var(--deep-blue));
+  color: #ffffff;
+}
+
+.pillarIcon svg,
+.statIcon svg {
+  width: 27px;
+  height: 27px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
+.cardBody h3 {
+  margin: 0 0 8px;
+  color: var(--ink);
+  font-size: 1.19rem;
+}
+
+.cardBody > p {
+  color: var(--muted);
+  font-size: 0.94rem;
+}
+
+.cardLink {
+  display: inline-block;
+  margin-top: auto;
+  padding-top: 16px;
+  color: var(--deep-blue);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.split {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(310px, 1fr));
+  align-items: center;
+  gap: 48px;
+}
+
+:global(.about-illustration) {
+  border-radius: 24px;
+  padding: 14px 10px;
+  background: linear-gradient(135deg, #0a2a52, #1469c4);
+}
+
+:global(.about-illustration) svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  filter: drop-shadow(0 12px 18px rgb(0 0 0 / 20%));
+}
+
+.aboutCopy h2 {
+  margin: 0 0 14px;
+  color: var(--ink);
+  font-size: clamp(1.625rem, 3.4vw, 2.25rem);
+}
+
+.aboutCopy p {
+  margin-bottom: 14px;
+  color: var(--muted);
+}
+
+.aboutCopy ul {
+  margin: 18px 0 24px;
+  padding: 0;
+  list-style: none;
+}
+
+.aboutCopy li {
+  position: relative;
+  margin-bottom: 10px;
+  padding-left: 30px;
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.aboutCopy li::before {
+  position: absolute;
+  top: 1px;
+  left: 0;
+  display: grid;
+  width: 22px;
+  height: 22px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--blue);
+  color: #ffffff;
+  content: "✓";
+  font-size: 0.81rem;
+}
+
+.stats {
+  position: relative;
+  overflow: hidden;
+  padding: 72px 0;
+  background:
+    radial-gradient(circle at 12% 0, #1469c4 0, transparent 48%),
+    radial-gradient(circle at 92% 100%, #1e90e8 0, transparent 42%),
+    #061a31;
+  color: #ffffff;
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 22px;
+}
+
+.statCard {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgb(255 255 255 / 18%);
+  border-radius: 22px;
+  padding: 28px 24px 34px;
+  background: rgb(255 255 255 / 7%);
+  text-align: left;
+  backdrop-filter: blur(6px);
+}
+
+.statCard::after {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 58%;
+  height: 5px;
+  border-radius: 0 5px 0 0;
+  background: linear-gradient(90deg, var(--blue), #7cc0f5);
+  content: "";
+}
+
+.statIcon {
+  display: grid;
+  width: 54px;
+  height: 54px;
+  place-items: center;
+  margin-bottom: 18px;
+  border-radius: 15px;
+  background: linear-gradient(135deg, var(--blue), var(--deep-blue));
+  color: #ffffff;
+}
+
+.statCard strong {
+  display: block;
+  margin-bottom: 4px;
+  background: linear-gradient(90deg, #ffffff, #7cc0f5);
+  background-clip: text;
+  color: transparent;
+  font-family: Sora, sans-serif;
+  font-size: 2.875rem;
+  font-weight: 800;
+  line-height: 1.1;
+  -webkit-background-clip: text;
+}
+
+.statLabel {
+  color: #b9cde3;
+  font-size: 0.94rem;
+}
+
+.stepsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 26px;
+}
+
+.step {
+  padding: 26px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  box-shadow: var(--shadow);
+  text-align: center;
+}
+
+.stepNumber {
+  display: grid;
+  width: 46px;
+  height: 46px;
+  place-items: center;
+  margin: 0 auto 14px;
+  border-radius: 50%;
+  background: var(--blue);
+  color: #ffffff;
+  font-family: Sora, sans-serif;
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+.step h3 {
+  margin: 0 0 8px;
+  color: var(--ink);
+  font-size: 1.1rem;
+}
+
+.step p {
+  color: var(--muted);
+  font-size: 0.94rem;
+}
+
+.cta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  border-radius: 22px;
+  padding: 40px;
+  background: linear-gradient(100deg, #1e90e8, #1257c4);
+  color: #ffffff;
+}
+
+.cta h2 {
+  margin: 0 0 6px;
+  color: #ffffff;
+  font-size: 1.75rem;
+}
+
+.cta p {
+  color: rgb(255 255 255 / 90%);
+}
+
+@media (max-width: 940px) {
+  .heroImage {
+    background-position: 58% center;
+  }
+}
+
+@media (max-width: 600px) {
+  .section {
+    padding: 64px 0;
+  }
+
+  .hero {
+    height: clamp(620px, 82svh, 740px);
+    min-height: 620px;
+    padding: 42px 0 132px;
+  }
+
+  .heroImage {
+    background-position: 62% center;
+  }
+
+  .heroCopy h1 {
+    max-width: 100%;
+    min-height: 3.36em;
+    margin-bottom: 18px;
+    font-size: clamp(2rem, 8.5vw, 3rem);
+    letter-spacing: -0.025em;
+    line-height: 1.12;
+  }
+
+  .heroCopy p {
+    min-height: 7.2em;
+    margin-bottom: 24px;
+    font-size: 1rem;
+    line-height: 1.55;
+  }
+
+  .heroActions {
+    gap: 10px;
+  }
+
+  .heroActions a {
+    min-height: 46px;
+    align-items: center;
+  }
+
+  .heroIndicators {
+    bottom: 88px;
+  }
+
+  .cardGrid,
+  .stepsGrid {
+    gap: 18px;
+  }
+
+  .cardBody {
+    padding: 20px;
+  }
+
+  .cta {
+    align-items: flex-start;
+    flex-direction: column;
+    padding: 28px;
+  }
+
+  .cta h2 {
+    font-size: 1.5rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .heroImage,
+  .heroCopy,
+  .heroIndicators button {
+    animation: none;
+    transition: none;
+  }
+}

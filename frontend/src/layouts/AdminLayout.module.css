@@ -1,0 +1,236 @@
+.shell {
+  min-width: 0;
+  min-height: 100vh;
+  background: #ffffff;
+  color: #172d4d;
+  --background: #ffffff;
+  --ink: #172d4d;
+  --muted: #718096;
+  --soft: #f4f7fb;
+  --card: #ffffff;
+  --line: #e8edf3;
+  --shadow: 0 12px 34px rgb(23 45 77 / 8%);
+  --admin-action-bg: #12408a;
+  --admin-action-hover: #0c3269;
+  --admin-action-text: #ffffff;
+  --admin-link: #193b65;
+  --admin-danger-hover: #821b16;
+  --admin-danger-bg: #fff1f0;
+  --admin-danger: #8d1c13;
+  --admin-success-bg: #eaf8f0;
+  --admin-success: #12643f;
+}
+
+:global(body:has([data-admin-layout="authenticated"]))::before {
+  background: #ffffff;
+}
+
+.authenticatedShell {
+  display: grid;
+  grid-template-columns: 248px minmax(0, 1fr);
+  grid-template-rows: auto auto 1fr;
+}
+
+.header {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  border-bottom: 1px solid #e8edf3;
+  padding: 14px clamp(20px, 4vw, 52px);
+  background: #ffffff;
+}
+
+.authenticatedShell .header {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.navigation {
+  display: grid;
+  align-content: start;
+  gap: 26px;
+  grid-column: 1;
+  grid-row: 1 / 4;
+  border-right: 1px solid #183956;
+  padding: 26px 14px;
+  background: #08223d;
+}
+
+.navigationGroup {
+  display: grid;
+  gap: 5px;
+}
+
+.navigationGroup h2 {
+  padding: 0 10px 7px;
+  color: #a9c4dc;
+  font-family: inherit;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.navigation a {
+  display: block;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 8px 10px;
+  color: #d7e4f0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.4;
+  text-decoration: none;
+  transition: background-color 140ms ease, color 140ms ease, border-color 140ms ease;
+}
+
+.navigation a:hover,
+.navigation a[aria-current="page"] {
+  border-color: rgb(255 255 255 / 16%);
+  background: rgb(255 255 255 / 10%);
+  color: #ffffff;
+}
+
+.navigation a[aria-current="page"] {
+  font-weight: 700;
+}
+
+.navigation a:focus-visible,
+.logout:focus-visible {
+  outline: 3px solid #9dc8f0;
+  outline-offset: 2px;
+}
+
+.brand {
+  color: #172d4d;
+  font-family: Sora, "Plus Jakarta Sans", system-ui, sans-serif;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.account {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 22px;
+}
+
+.identity {
+  display: grid;
+  min-width: 0;
+  line-height: 1.35;
+}
+
+.identity strong {
+  overflow-wrap: anywhere;
+}
+
+.email,
+.role {
+  color: #718096;
+  font-size: 0.8125rem;
+}
+
+.logout {
+  border: 0;
+  border-radius: 8px;
+  padding: 9px 14px;
+  background: var(--admin-action-bg);
+  color: var(--admin-action-text);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.logout:hover:not(:disabled) {
+  background: var(--admin-action-hover);
+}
+
+.logout:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+.error {
+  grid-column: 2;
+  grid-row: 2;
+  border-bottom: 1px solid var(--line);
+  padding: 10px 20px;
+  background: var(--admin-danger-bg);
+  color: var(--admin-danger);
+  text-align: center;
+}
+
+.content {
+  min-width: 0;
+  grid-column: 2;
+  grid-row: 3;
+  width: min(1180px, calc(100% - 56px));
+  margin: 0 auto;
+  padding: 42px 0 56px;
+  background: #ffffff;
+}
+
+@media (max-width: 1024px) {
+  .authenticatedShell {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .header {
+    padding-right: 24px;
+    padding-left: 24px;
+  }
+
+  .navigation {
+    grid-template-columns: repeat(auto-fit, minmax(175px, 1fr));
+    gap: 18px;
+    border-right: 0;
+    border-bottom: 1px solid #183956;
+    padding: 18px 24px;
+  }
+
+  .content {
+    width: min(1180px, calc(100% - 48px));
+  }
+}
+
+@media (max-width: 600px) {
+  .header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 14px;
+    padding: 16px;
+  }
+
+  .account {
+    width: 100%;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .email,
+  .role {
+    overflow-wrap: anywhere;
+  }
+
+  .navigation {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px 10px;
+    padding: 16px;
+  }
+
+  .content {
+    width: calc(100% - 32px);
+    padding: 28px 0 40px;
+  }
+}
+
+@media (max-width: 380px) {
+  .navigation {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

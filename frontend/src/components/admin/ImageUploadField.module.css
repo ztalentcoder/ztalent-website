@@ -1,0 +1,132 @@
+.field {
+  display: grid;
+  min-width: 0;
+  gap: 7px;
+  color: var(--ink);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.label {
+  color: var(--ink);
+}
+
+.uploader {
+  display: grid;
+  grid-template-columns: minmax(0, 190px) minmax(0, 1fr);
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 12px;
+  background: var(--background);
+}
+
+.preview {
+  display: grid;
+  width: 100%;
+  height: 128px;
+  overflow: hidden;
+  place-items: center;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  background: var(--soft);
+  color: var(--muted);
+  font-size: 0.82rem;
+  text-align: center;
+}
+
+.preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.fileInput {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  clip-path: inset(50%);
+}
+
+.actionButton,
+.removeButton {
+  border: 1px solid var(--admin-action-bg);
+  border-radius: 8px;
+  padding: 8px 12px;
+  background: var(--admin-action-bg);
+  color: var(--admin-action-text);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.removeButton {
+  border-color: var(--line);
+  background: var(--card);
+  color: var(--admin-danger);
+}
+
+.actionButton:hover {
+  background: var(--admin-action-hover);
+}
+
+.actionButton:focus-visible,
+.removeButton:focus-visible {
+  outline: 3px solid #7cc0f5;
+  outline-offset: 2px;
+}
+
+.fileInput:focus-visible + .actionButton {
+  outline: 3px solid #7cc0f5;
+  outline-offset: 2px;
+}
+
+.fileName,
+.help,
+.progress span {
+  min-width: 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+  overflow-wrap: anywhere;
+}
+
+.error {
+  color: var(--admin-danger);
+  font-size: 0.84rem;
+  font-weight: 600;
+}
+
+.progress {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.progress progress {
+  width: min(260px, 100%);
+  accent-color: var(--admin-action-bg);
+}
+
+@media (max-width: 520px) {
+  .uploader {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .preview {
+    max-width: 260px;
+  }
+}

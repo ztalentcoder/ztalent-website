@@ -1,0 +1,276 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ContentStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum MessageStatus {
+  NEW
+  READ
+  REPLIED
+  ARCHIVED
+}
+
+enum ContactTopic {
+  GENERAL_QUESTION
+  REQUEST_SYSTEM
+  REQUEST_DATA_SERVICE
+  COURSE_QUESTION
+}
+
+enum CourseLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
+enum AdminRole {
+  SUPER_ADMIN
+  EDITOR
+}
+
+model CompanyProfile {
+  /// The single company profile uses the fixed primary key value 1.
+  id          Int          @id @default(1) @db.SmallInt
+  name        String       @db.VarChar(120)
+  tagline     String?      @db.VarChar(180)
+  description String?      @db.Text
+  email       String?      @db.VarChar(320)
+  phone       String?      @db.VarChar(32)
+  location    String?      @db.VarChar(160)
+  hours       String?      @db.VarChar(160)
+  logoUrl     String?      @db.VarChar(2048)
+  createdAt   DateTime     @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime     @updatedAt @db.Timestamptz(3)
+  socialLinks SocialLink[]
+
+  @@map("company_profiles")
+}
+
+model SocialLink {
+  id               String        @id @default(uuid()) @db.Uuid
+  companyProfileId Int           @db.SmallInt
+  platform         String        @db.VarChar(30)
+  url              String        @db.VarChar(2048)
+  sortOrder        Int           @default(0)
+  isActive         Boolean       @default(true)
+  createdAt        DateTime      @default(now()) @db.Timestamptz(3)
+  updatedAt        DateTime      @updatedAt @db.Timestamptz(3)
+  companyProfile   CompanyProfile @relation(fields: [companyProfileId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@unique([companyProfileId, platform])
+  @@index([companyProfileId, sortOrder])
+  @@map("social_links")
+}
+
+model BusinessArea {
+  id          String        @id @default(uuid()) @db.Uuid
+  name        String        @db.VarChar(120)
+  slug        String        @unique @db.VarChar(150)
+  summary     String?       @db.VarChar(300)
+  description String        @db.Text
+  imageUrl    String?       @db.VarChar(2048)
+  status      ContentStatus
+  sortOrder   Int           @default(0)
+  createdAt   DateTime      @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime      @updatedAt @db.Timestamptz(3)
+  services    Service[]
+  projects    Project[]
+
+  @@index([status, sortOrder])
+  @@map("business_areas")
+}
+
+model Service {
+  id            String        @id @default(uuid()) @db.Uuid
+  businessAreaId String       @db.Uuid
+  title         String        @db.VarChar(160)
+  slug          String        @db.VarChar(180)
+  summary       String?       @db.VarChar(300)
+  description   String        @db.Text
+  status        ContentStatus
+  sortOrder     Int           @default(0)
+  publishedAt   DateTime?     @db.Timestamptz(3)
+  createdAt     DateTime      @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime      @updatedAt @db.Timestamptz(3)
+  businessArea  BusinessArea  @relation(fields: [businessAreaId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@unique([businessAreaId, slug])
+  @@index([businessAreaId, status, sortOrder])
+  @@map("services")
+}
+
+model Project {
+  id            String        @id @default(uuid()) @db.Uuid
+  businessAreaId String?      @db.Uuid
+  title         String        @db.VarChar(180)
+  slug          String        @unique @db.VarChar(200)
+  summary       String        @db.VarChar(400)
+  description   String        @db.Text
+  imageUrl      String?       @db.VarChar(2048)
+  status        ContentStatus
+  sortOrder     Int           @default(0)
+  publishedAt   DateTime?     @db.Timestamptz(3)
+  createdAt     DateTime      @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime      @updatedAt @db.Timestamptz(3)
+  businessArea  BusinessArea? @relation(fields: [businessAreaId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  testimonials  Testimonial[]
+
+  @@index([status, publishedAt])
+  @@index([businessAreaId, status])
+  @@map("projects")
+}
+
+model AcademicCourse {
+  id           String        @id @default(uuid()) @db.Uuid
+  title        String        @db.VarChar(180)
+  slug         String        @unique @db.VarChar(200)
+  summary      String?       @db.VarChar(400)
+  level        CourseLevel
+  language     String?       @db.VarChar(60)
+  episodeCount Int?
+  externalUrl  String        @db.VarChar(2048)
+  status       ContentStatus
+  sortOrder    Int           @default(0)
+  publishedAt  DateTime?     @db.Timestamptz(3)
+  createdAt    DateTime      @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime      @updatedAt @db.Timestamptz(3)
+
+  @@index([status, sortOrder])
+  @@map("academic_courses")
+}
+
+model BlogCategory {
+  id          String     @id @default(uuid()) @db.Uuid
+  name        String     @db.VarChar(100)
+  slug        String     @unique @db.VarChar(120)
+  description String?    @db.VarChar(300)
+  createdAt   DateTime   @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime   @updatedAt @db.Timestamptz(3)
+  posts       BlogPost[]
+
+  @@map("blog_categories")
+}
+
+model BlogPost {
+  id            String        @id @default(uuid()) @db.Uuid
+  categoryId    String        @db.Uuid
+  title         String        @db.VarChar(200)
+  slug          String        @unique @db.VarChar(220)
+  excerpt       String?       @db.VarChar(500)
+  body          String        @db.Text
+  coverImageUrl String?       @db.VarChar(2048)
+  status        ContentStatus
+  publishedAt   DateTime?     @db.Timestamptz(3)
+  createdAt     DateTime      @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime      @updatedAt @db.Timestamptz(3)
+  category      BlogCategory  @relation(fields: [categoryId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([status, publishedAt])
+  @@index([categoryId, status])
+  @@map("blog_posts")
+}
+
+model TeamMember {
+  id        String        @id @default(uuid()) @db.Uuid
+  name      String        @db.VarChar(160)
+  role      String        @db.VarChar(120)
+  bio       String?       @db.Text
+  photoUrl  String?       @db.VarChar(2048)
+  status    ContentStatus
+  sortOrder Int           @default(0)
+  createdAt DateTime      @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime      @updatedAt @db.Timestamptz(3)
+
+  @@index([status, sortOrder])
+  @@map("team_members")
+}
+
+model ContactMessage {
+  id        String       @id @default(uuid()) @db.Uuid
+  name      String       @db.VarChar(160)
+  email     String       @db.VarChar(320)
+  phone     String?      @db.VarChar(32)
+  topic     ContactTopic
+  message   String       @db.Text
+  status    MessageStatus
+  createdAt DateTime     @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime     @updatedAt @db.Timestamptz(3)
+
+  @@index([status, createdAt])
+  @@map("contact_messages")
+}
+
+model Testimonial {
+  id                     String        @id @default(uuid()) @db.Uuid
+  projectId              String?       @db.Uuid
+  quote                  String        @db.Text
+  attributionName        String?       @db.VarChar(160)
+  attributionOrganization String?      @db.VarChar(180)
+  status                 ContentStatus
+  sortOrder              Int           @default(0)
+  createdAt              DateTime      @default(now()) @db.Timestamptz(3)
+  updatedAt              DateTime      @updatedAt @db.Timestamptz(3)
+  project                Project?      @relation(fields: [projectId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  @@index([status, sortOrder])
+  @@map("testimonials")
+}
+
+model SiteStatistic {
+  id        String   @id @default(uuid()) @db.Uuid
+  key       String   @unique @db.VarChar(80)
+  label     String   @db.VarChar(120)
+  value     Int
+  suffix    String?  @db.VarChar(20)
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  @@index([isActive, sortOrder])
+  @@map("site_statistics")
+}
+
+model AdminUser {
+  id          String        @id @default(uuid()) @db.Uuid
+  /// Normalize to lowercase in the application; a PostgreSQL CHECK enforces lowercase values.
+  email       String        @unique @db.VarChar(320)
+  passwordHash String       @db.VarChar(255)
+  name        String        @db.VarChar(160)
+  role        AdminRole
+  isActive    Boolean       @default(true)
+  lastLoginAt DateTime?     @db.Timestamptz(3)
+  createdAt   DateTime      @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime      @updatedAt @db.Timestamptz(3)
+  sessions    AdminSession[]
+
+  @@map("admin_users")
+}
+
+model AdminSession {
+  id          String    @id @default(uuid()) @db.Uuid
+  adminUserId String    @db.Uuid
+  /// Store only the lowercase 64-character hexadecimal SHA-256 token digest, never the raw token.
+  tokenHash   String    @unique @db.Char(64)
+  expiresAt   DateTime  @db.Timestamptz(3)
+  revokedAt   DateTime? @db.Timestamptz(3)
+  lastSeenAt  DateTime? @db.Timestamptz(3)
+  userAgent   String?   @db.VarChar(512)
+  createdAt   DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime  @updatedAt @db.Timestamptz(3)
+  adminUser   AdminUser @relation(fields: [adminUserId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@index([adminUserId, expiresAt])
+  @@index([expiresAt])
+  @@map("admin_sessions")
+}

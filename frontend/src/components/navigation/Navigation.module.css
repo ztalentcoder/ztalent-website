@@ -1,0 +1,56 @@
+.desktop {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.link {
+  border-radius: 8px;
+  padding: 9px 10px;
+  color: #cfe2f5;
+  font-size: 0.84rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background-color 150ms ease, color 150ms ease;
+  white-space: nowrap;
+}
+
+.link:hover,
+.active {
+  background: rgb(30 144 232 / 28%);
+  color: #ffffff;
+}
+
+.mobile {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 0 20px;
+}
+
+.mobileLink {
+  border-radius: 6px;
+  padding: 11px 12px;
+  color: #cfe2f5;
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.mobileLink:hover,
+.mobileLink.active {
+  background: rgb(30 144 232 / 28%);
+  color: #ffffff;
+}
+
+.mobileCta {
+  display: block;
+  margin-top: 10px;
+  border-radius: 8px;
+  padding: 12px 20px;
+  background: var(--blue);
+  color: #ffffff;
+  font-weight: 700;
+  text-align: center;
+  text-decoration: none;
+}

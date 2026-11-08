@@ -1,0 +1,52 @@
+.waves {
+  position: absolute;
+  z-index: 3;
+  right: 0;
+  bottom: -1px;
+  left: 0;
+  height: 84px;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.waves svg {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 200%;
+  height: 80px;
+  animation: wave 42s linear infinite;
+}
+
+.waves path {
+  fill: var(--background);
+}
+
+.waveOne {
+  height: 84px !important;
+  opacity: 0.28;
+}
+
+.waveTwo {
+  height: 68px !important;
+  animation-duration: 30s !important;
+  animation-direction: reverse !important;
+  opacity: 0.55;
+}
+
+.waveThree {
+  height: 52px !important;
+  animation-duration: 22s !important;
+}
+
+@keyframes wave {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .waves svg {
+    animation: none;
+  }
+}

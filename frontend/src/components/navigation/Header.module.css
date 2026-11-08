@@ -1,0 +1,153 @@
+.header {
+  position: sticky;
+  z-index: 60;
+  top: env(safe-area-inset-top, 0px);
+  border-bottom: 1px solid #16395f;
+  background: var(--navy);
+  color: #ffffff;
+}
+
+.container {
+  display: flex;
+  width: min(1140px, 100%);
+  min-height: 74px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin: 0 auto;
+  padding: 0 22px;
+}
+
+.brand {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 11px;
+  color: #ffffff;
+  font-family: Sora, sans-serif;
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  line-height: 1.1;
+  text-decoration: none;
+}
+
+.brand img {
+  width: auto;
+  height: 46px;
+}
+
+.brand small {
+  display: block;
+  margin-top: 2px;
+  color: #9fc3e6;
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 0.69rem;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+.desktopNavigation {
+  margin-left: auto;
+}
+
+.actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 10px;
+}
+
+.quoteButton {
+  margin-left: 6px;
+  border-radius: 8px;
+  padding: 10px 20px;
+  font-size: 0.875rem;
+  color: #ffffff;
+  white-space: nowrap;
+}
+
+.menuButton,
+.mobileNavigation {
+  display: none;
+}
+
+@media (max-width: 940px) {
+  .container {
+    min-height: 74px;
+  }
+
+  .desktopNavigation {
+    display: none;
+  }
+
+  .quoteButton {
+    display: none;
+  }
+
+  .menuButton {
+    display: grid;
+    width: 54px;
+    height: 50px;
+    place-items: center;
+    border: 1px solid #4a6a92;
+    border-radius: 8px;
+    background: transparent;
+    color: #ffffff;
+    cursor: pointer;
+    font-size: 1.45rem;
+    line-height: 1;
+  }
+
+  .menuButton:hover {
+    background: rgb(255 255 255 / 7%);
+  }
+
+  .mobileNavigation {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    left: 0;
+    display: none;
+    border-bottom: 1px solid #16395f;
+    background: var(--navy);
+    padding: 0 22px;
+  }
+
+  .open {
+    display: block;
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    gap: 10px;
+    padding: 0 16px;
+  }
+
+  .brand {
+    gap: 8px;
+    font-size: 0.92rem;
+  }
+
+  .brand img {
+    height: 42px;
+  }
+
+  .brand small {
+    font-size: 0.65rem;
+  }
+
+  .actions {
+    gap: 7px;
+  }
+
+  .menuButton {
+    width: 46px;
+    height: 44px;
+  }
+
+  .mobileNavigation {
+    padding: 0 16px;
+  }
+}

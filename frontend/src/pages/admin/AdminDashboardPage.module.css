@@ -1,0 +1,141 @@
+.page {
+  display: grid;
+  gap: 32px;
+  min-width: 0;
+}
+
+.page header > p:last-child {
+  margin-top: 8px;
+  color: var(--muted);
+}
+
+.page h1 {
+  margin-top: 4px;
+  color: var(--ink);
+  font-size: clamp(1.75rem, 3vw, 2.25rem);
+  font-weight: 700;
+}
+
+.page h2 {
+  margin-bottom: 14px;
+  color: var(--ink);
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.eyebrow {
+  color: var(--deep-blue);
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr));
+  gap: 16px;
+}
+
+.card {
+  display: grid;
+  gap: 20px;
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 22px;
+  background: var(--card);
+  box-shadow: 0 4px 14px rgb(8 34 61 / 6%);
+  text-decoration: none;
+  transition: border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
+}
+
+.card span {
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.card strong {
+  color: var(--admin-link);
+  font-family: Sora, "Plus Jakarta Sans", system-ui, sans-serif;
+  font-size: 2.125rem;
+  line-height: 1;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  border-color: #9abfe0;
+  box-shadow: var(--shadow);
+}
+
+.card:focus-visible,
+.links a:focus-visible,
+.error button:focus-visible {
+  outline: 3px solid #7cc0f5;
+  outline-offset: 3px;
+}
+
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.links a,
+.error button {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 9px 14px;
+  background: var(--card);
+  color: var(--admin-link);
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.links a:hover {
+  border-color: #9abfe0;
+  background: var(--soft);
+}
+
+.error {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--admin-danger);
+  border-radius: 8px;
+  padding: 14px 16px;
+  background: var(--admin-danger-bg);
+  color: var(--admin-danger);
+}
+
+.error button {
+  flex: 0 0 auto;
+  background: var(--admin-action-bg);
+  color: var(--admin-action-text);
+  cursor: pointer;
+}
+
+@media (max-width: 480px) {
+  .page {
+    gap: 24px;
+  }
+
+  .cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .card {
+    gap: 14px;
+    padding: 16px;
+  }
+
+  .card strong {
+    font-size: 1.75rem;
+  }
+}

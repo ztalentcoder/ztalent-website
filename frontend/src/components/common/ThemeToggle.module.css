@@ -1,0 +1,28 @@
+.toggle {
+  display: inline-grid;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid #4a6a92;
+  border-radius: 50%;
+  background: transparent;
+  color: #ffffff;
+  cursor: pointer;
+  transition: border-color 160ms ease, color 160ms ease;
+}
+
+.toggle:hover {
+  border-color: #7cc0f5;
+  color: #7cc0f5;
+}
+
+.toggle svg {
+  width: 19px;
+  height: 19px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.7;
+}

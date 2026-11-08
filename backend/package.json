@@ -1,0 +1,26 @@
+{
+  "name": "@ztalent-coder/backend",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "nodemon src/server.js",
+    "start": "node src/server.js",
+    "prisma:generate": "prisma generate",
+    "admin:provision": "node scripts/provision-initial-admin.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.16.2",
+    "argon2": "^0.45.2",
+    "dotenv": "^16.6.1",
+    "express": "^5.1.0",
+    "express-rate-limit": "^8.7.3",
+    "multer": "^2.5.0",
+    "sharp": "^0.35.5"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10",
+    "prisma": "^6.16.2"
+  }
+}
