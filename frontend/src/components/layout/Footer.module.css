@@ -50,6 +50,7 @@
   padding: 4px 0;
   color: #a9c4e0;
   font-size: 0.9rem;
+  overflow-wrap: anywhere;
   text-decoration: none;
 }
 

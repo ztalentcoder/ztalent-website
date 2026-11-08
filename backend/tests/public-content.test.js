@@ -49,6 +49,7 @@ test('public company profile exposes only allowlisted contact fields and active 
           location: 'Public address',
           hours: 'Weekdays',
           logoUrl: 'https://example.test/logo.png',
+          homeIntroImageUrl: '/uploads/images/company/123e4567-e89b-42d3-a456-426614174000.jpg',
           passwordHash: 'secret',
           socialLinks: [{ platform: 'linkedin', url: 'https://linkedin.example', isActive: true }],
         };
@@ -69,6 +70,7 @@ test('public company profile exposes only allowlisted contact fields and active 
         location: 'Public address',
         hours: 'Weekdays',
         logoUrl: 'https://example.test/logo.png',
+        homeIntroImageUrl: '/uploads/images/company/123e4567-e89b-42d3-a456-426614174000.jpg',
         socialLinks: [{ platform: 'linkedin', url: 'https://linkedin.example' }],
       },
     });
@@ -76,6 +78,47 @@ test('public company profile exposes only allowlisted contact fields and active 
   assert.deepEqual(query.where, { id: 1 });
   assert.deepEqual(query.select.socialLinks.where, { isActive: true });
   assert.equal(Object.hasOwn(query.select, 'passwordHash'), false);
+});
+
+test('public statistics count only records eligible for public publication', async () => {
+  const queries = {};
+  const app = publicApp(createPublicPrisma({
+    academicCourse: {
+      count: async ({ where }) => { queries.academicCourse = where; return 1; },
+    },
+    project: {
+      count: async ({ where }) => { queries.project = where; return 2; },
+    },
+    service: {
+      count: async ({ where }) => { queries.service = where; return 0; },
+    },
+    blogPost: {
+      count: async ({ where }) => { queries.blogPost = where; return 3; },
+    },
+  }));
+
+  await withServer(app, async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/api/public/statistics`);
+    assert.equal(response.status, 200);
+    assert.equal(response.headers.get('cache-control'), 'no-store');
+    assert.deepEqual(await response.json(), {
+      status: 'success',
+      statistics: [
+        { key: 'academicCourses', value: 1, label: 'Academic Course' },
+        { key: 'projects', value: 2, label: 'Published Projects' },
+        { key: 'services', value: 0, label: 'Services' },
+        { key: 'blogArticles', value: 3, label: 'Published Blog Articles' },
+      ],
+    });
+  });
+
+  assert.deepEqual(queries.academicCourse, { status: 'PUBLISHED' });
+  assert.deepEqual(queries.project, { status: 'PUBLISHED' });
+  assert.deepEqual(queries.service, {
+    status: 'PUBLISHED',
+    businessArea: { status: 'PUBLISHED' },
+  });
+  assert.deepEqual(queries.blogPost, { status: 'PUBLISHED' });
 });
 
 test('public collections select published records, serialize explicit fields, and paginate', async () => {

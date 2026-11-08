@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import AboutIllustration from '../../components/common/AboutIllustration.jsx';
 import Button from '../../components/common/Button.jsx';
 import PrototypeIcon from '../../components/common/PrototypeIcon.jsx';
 import SectionHeading from '../../components/common/SectionHeading.jsx';
@@ -37,6 +36,13 @@ const highlights = [
   'Data and AI advice that is practical',
 ];
 
+const statisticDefinitions = [
+  { key: 'academicCourses', singular: 'Academic Course', plural: 'Academic Courses' },
+  { key: 'projects', singular: 'Published Project', plural: 'Published Projects' },
+  { key: 'services', singular: 'Service', plural: 'Services' },
+  { key: 'blogArticles', singular: 'Published Blog Article', plural: 'Published Blog Articles' },
+];
+
 const workSteps = [
   { number: '1', title: 'Consult', description: 'We listen and define the problem together.' },
   { number: '2', title: 'Design', description: 'We plan the system and agree on scope.' },
@@ -48,18 +54,24 @@ const heroSlides = [
   {
     label: 'Academic / Teach Talent',
     image: '/images/image1.jpg',
+    imagePosition: '50% center',
+    mobileImagePosition: '56% center',
     heading: 'We Teach Talent, Build Solutions and Turn Data Into Decisions',
     description: (company) => company?.description || 'Ztalent Coder helps students learn to code, gives institutions the systems they need, and helps organizations make sense of their data.',
   },
   {
     label: 'Web & Mobile Development',
     image: '/images/image2.jpg',
+    imagePosition: '56% center',
+    mobileImagePosition: '62% center',
     heading: 'Building Digital Experiences That Matter',
     description: () => 'We design and develop modern websites, web applications, and mobile solutions that help businesses and individuals grow, connect, and succeed in the digital world.',
   },
   {
     label: 'AI & Data Solutions',
     image: '/images/image3.avif',
+    imagePosition: '50% center',
+    mobileImagePosition: '58% center',
     heading: 'Turning Data into Intelligent Solutions',
     description: () => 'We harness the power of data and artificial intelligence to uncover insights, automate processes, and build smarter solutions for real-world challenges.',
   },
@@ -105,14 +117,33 @@ function BusinessAreaCard({ area, link, to }) {
 
 export default function HomePage() {
   const { company } = usePublicCompany();
-  const statistics = usePublicContent('site-statistics', { pageSize: 8 });
+  const statistics = usePublicContent('statistics', {}, { refreshIntervalMs: 60_000 });
   const areas = usePublicContent('business-areas', { pageSize: 6 });
   const testimonials = usePublicContent('testimonials', { pageSize: 3 });
   const publishedAreas = areas.data?.items ?? [];
-  const publishedStatistics = statistics.data?.items ?? [];
   const publishedTestimonials = testimonials.data?.items ?? [];
+  const statisticValues = new Map((statistics.data?.statistics ?? []).map((metric) => [metric.key, metric]));
+  const [introImageFailed, setIntroImageFailed] = useState(false);
   const [activeHeroSlide, setActiveHeroSlide] = useState(0);
   const [heroSlideInteraction, setHeroSlideInteraction] = useState(0);
+
+  function handleHeroPointerMove(event) {
+    const supportsFinePointer = window.matchMedia?.('(hover: hover) and (pointer: fine)').matches;
+    const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    if (!supportsFinePointer || reducedMotion || event.pointerType !== 'mouse') return;
+
+    const bounds = event.currentTarget.getBoundingClientRect();
+    if (!bounds.width || !bounds.height) return;
+    const horizontal = Math.max(-1, Math.min(1, ((event.clientX - bounds.left) / bounds.width) * 2 - 1));
+    const vertical = Math.max(-1, Math.min(1, ((event.clientY - bounds.top) / bounds.height) * 2 - 1));
+    event.currentTarget.style.setProperty('--hero-tilt-x', `${-vertical * 3}deg`);
+    event.currentTarget.style.setProperty('--hero-tilt-y', `${horizontal * 3}deg`);
+  }
+
+  function resetHeroTilt(event) {
+    event.currentTarget.style.setProperty('--hero-tilt-x', '0deg');
+    event.currentTarget.style.setProperty('--hero-tilt-y', '0deg');
+  }
 
   useEffect(() => {
     if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return undefined;
@@ -122,15 +153,26 @@ export default function HomePage() {
     return () => window.clearTimeout(timeout);
   }, [activeHeroSlide, heroSlideInteraction]);
 
+  useEffect(() => setIntroImageFailed(false), [company?.homeIntroImageUrl]);
+
   return (
     <main>
       <PageMetadata title={company?.name || 'Home'} description={company?.description || company?.tagline} />
-      <section className={styles.hero} id="home">
+      <section
+        className={styles.hero}
+        id="home"
+        onPointerMove={handleHeroPointerMove}
+        onPointerLeave={resetHeroTilt}
+      >
         {heroSlides.map((slide, index) => (
           <div
             className={`${styles.heroImage} ${index === activeHeroSlide ? styles.heroImageActive : ''}`}
             key={slide.image}
-            style={{ backgroundImage: `url("${slide.image}")` }}
+            style={{
+              backgroundImage: `url("${slide.image}")`,
+              '--hero-image-position': slide.imagePosition,
+              '--hero-image-position-mobile': slide.mobileImagePosition,
+            }}
             aria-hidden="true"
           />
         ))}
@@ -202,7 +244,15 @@ export default function HomePage() {
 
       <section className={`${styles.section} ${styles.softSection}`}>
         <div className={`${styles.container} ${styles.split}`}>
-          <AboutIllustration />
+          <div className={styles.aboutImage}>
+            <img
+              src={!introImageFailed
+                ? getPublicImageUrl(company?.homeIntroImageUrl) || '/images/image1.jpg'
+                : '/images/image1.jpg'}
+              alt="A coding workspace representing Ztalent Coder's training and technology solutions"
+              onError={() => setIntroImageFailed(true)}
+            />
+          </div>
           <div className={styles.aboutCopy}>
             <h2>A tech team you can learn from and build with</h2>
             <p>
@@ -216,22 +266,25 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className={styles.stats} aria-label="Ztalent Coder at a glance">
+      <section className={styles.stats} aria-label="Ztalent Coder at a glance" aria-busy={statistics.status === 'loading'}>
         <div className={`${styles.container} ${styles.statsGrid}`}>
-          {publishedStatistics.map((metric) => (
-            <article className={styles.statCard} key={metric.key}>
-              <span className={styles.statIcon}><PrototypeIcon name="projects" /></span>
-              <strong>{metric.value}{metric.suffix || ''}</strong>
-              <span className={styles.statLabel}>{metric.label}</span>
-            </article>
-          ))}
-          {publishedStatistics.length === 0 && (
-            <PublicContentState
-              status={statistics.status}
-              error={statistics.error}
-              retry={statistics.retry}
-              empty="Company statistics will appear here when published."
-            />
+          {statisticDefinitions.map(({ key, singular, plural }) => {
+            const metric = statisticValues.get(key);
+            const value = Number.isInteger(metric?.value) && metric.value >= 0 ? metric.value : 0;
+            const label = metric?.label || (value === 1 ? singular : plural);
+            return (
+              <article className={styles.statCard} key={key}>
+                <span className={styles.statIcon}><PrototypeIcon name="projects" /></span>
+                <strong>{value}</strong>
+                <span className={styles.statLabel}>{label}</span>
+              </article>
+            );
+          })}
+          {statistics.status === 'error' && (
+            <div className={styles.statisticsError} role="alert">
+              <span>Statistics are temporarily unavailable.</span>
+              <button type="button" onClick={statistics.retry}>Try again</button>
+            </div>
           )}
         </div>
       </section>

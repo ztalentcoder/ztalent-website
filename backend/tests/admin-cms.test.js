@@ -479,12 +479,22 @@ test('company profile singleton supports a validated create-or-update and includ
     const response = await fetch(`${baseUrl}/api/admin/company-profile`, {
       method: 'PUT',
       headers: { ...adminHeaders(), 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: 'ZTalent', email: 'INFO@ZTALENT.EXAMPLE' }),
+      body: JSON.stringify({
+        name: 'ZTalent',
+        email: 'INFO@ZTALENT.EXAMPLE',
+        homeIntroImageUrl: '/uploads/images/company/123e4567-e89b-42d3-a456-426614174000.jpg',
+      }),
     });
     assert.equal(response.status, 200);
     assert.deepEqual(await response.json(), {
       status: 'success',
-      item: { id: 1, name: 'ZTalent', email: 'info@ztalent.example', socialLinks: [] },
+      item: {
+        id: 1,
+        name: 'ZTalent',
+        email: 'info@ztalent.example',
+        homeIntroImageUrl: '/uploads/images/company/123e4567-e89b-42d3-a456-426614174000.jpg',
+        socialLinks: [],
+      },
     });
   });
   assert.equal(upsertOptions.create.id, 1);

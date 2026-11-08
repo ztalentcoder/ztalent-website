@@ -66,6 +66,7 @@ async function decodeAndSanitizeImage(buffer) {
 async function isImageReferenced(prisma, url) {
   const references = await Promise.all([
     prisma.companyProfile.findFirst({ where: { logoUrl: url }, select: { id: true } }),
+    prisma.companyProfile.findFirst({ where: { homeIntroImageUrl: url }, select: { id: true } }),
     prisma.businessArea.findFirst({ where: { imageUrl: url }, select: { id: true } }),
     prisma.project.findFirst({ where: { imageUrl: url }, select: { id: true } }),
     prisma.blogPost.findFirst({ where: { coverImageUrl: url }, select: { id: true } }),

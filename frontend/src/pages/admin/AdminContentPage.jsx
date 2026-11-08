@@ -483,6 +483,8 @@ function CompanyProfileEditor() {
   const [notice, setNotice] = useState('');
   const [logoFile, setLogoFile] = useState(null);
   const [logoProgress, setLogoProgress] = useState(null);
+  const [homeIntroImageFile, setHomeIntroImageFile] = useState(null);
+  const [homeIntroImageProgress, setHomeIntroImageProgress] = useState(null);
 
   useEffect(() => {
     let active = true;
@@ -508,29 +510,36 @@ function CompanyProfileEditor() {
     setSaving(true);
     setError('');
     setNotice('');
-    let uploadedImageUrl = null;
+    const uploadedImageUrls = [];
     let saved = false;
     try {
       const body = Object.fromEntries(Object.entries(profile).filter(([key]) => [
-        'name', 'tagline', 'description', 'email', 'phone', 'location', 'hours', 'logoUrl',
+        'name', 'tagline', 'description', 'email', 'phone', 'location', 'hours', 'logoUrl', 'homeIntroImageUrl',
       ].includes(key)));
       if (logoFile) {
         const image = await uploadAdminImage('company-profile', logoFile, setLogoProgress);
-        uploadedImageUrl = image.url;
+        uploadedImageUrls.push(image.url);
         body.logoUrl = image.url;
+      }
+      if (homeIntroImageFile) {
+        const image = await uploadAdminImage('company-profile', homeIntroImageFile, setHomeIntroImageProgress);
+        uploadedImageUrls.push(image.url);
+        body.homeIntroImageUrl = image.url;
       }
       const response = await updateCompanyProfile(body);
       saved = true;
       setProfile(response.item);
       setLogoFile(null);
       setLogoProgress(null);
-      const cleanupFailures = await cleanupImages(
-        profile.logoUrl && profile.logoUrl !== body.logoUrl ? [profile.logoUrl] : [],
-      );
-      setNotice(`Company profile saved.${cleanupFailures ? ' The previous logo could not be removed; contact an administrator to retry cleanup.' : ''}`);
+      setHomeIntroImageFile(null);
+      setHomeIntroImageProgress(null);
+      const previousImages = [profile.logoUrl, profile.homeIntroImageUrl]
+        .filter((url) => url && !Object.values(body).includes(url));
+      const cleanupFailures = await cleanupImages(previousImages);
+      setNotice(`Company profile saved.${cleanupFailures ? ' A previous image could not be removed; contact an administrator to retry cleanup.' : ''}`);
     } catch (requestError) {
-      const cleanupFailures = saved ? 0 : await cleanupImages(uploadedImageUrl ? [uploadedImageUrl] : []);
-      setError(`${getErrorMessage(requestError)}${cleanupFailures ? ' The uploaded logo could not be removed; contact an administrator to retry cleanup.' : ''}`);
+      const cleanupFailures = saved ? 0 : await cleanupImages(uploadedImageUrls);
+      setError(`${getErrorMessage(requestError)}${cleanupFailures ? ' An uploaded image could not be removed; contact an administrator to retry cleanup.' : ''}`);
     } finally {
       setSaving(false);
     }
@@ -589,6 +598,7 @@ function CompanyProfileEditor() {
     { name: 'location', label: 'Address / location', maxLength: 160 },
     { name: 'hours', label: 'Business hours', maxLength: 160 },
     { name: 'logoUrl', label: 'Company logo', type: 'image', resource: 'company-profile' },
+    { name: 'homeIntroImageUrl', label: 'Home intro image', type: 'image', resource: 'company-profile' },
   ];
 
   return (
@@ -604,10 +614,16 @@ function CompanyProfileEditor() {
             <FormField
               key={field.name}
               field={field}
-              value={profile?.[field.name] ?? ''}
-              file={field.name === 'logoUrl' ? logoFile : undefined}
-              uploadProgress={field.name === 'logoUrl' ? logoProgress : undefined}
-              onFileChange={field.name === 'logoUrl' ? setLogoFile : undefined}
+              value={field.name === 'homeIntroImageUrl'
+                ? profile?.homeIntroImageUrl || '/images/image1.jpg'
+                : profile?.[field.name] ?? ''}
+              file={field.name === 'homeIntroImageUrl' ? homeIntroImageFile : field.name === 'logoUrl' ? logoFile : undefined}
+              uploadProgress={field.name === 'homeIntroImageUrl'
+                ? homeIntroImageProgress
+                : field.name === 'logoUrl' ? logoProgress : undefined}
+              onFileChange={field.name === 'homeIntroImageUrl'
+                ? setHomeIntroImageFile
+                : field.name === 'logoUrl' ? setLogoFile : undefined}
               onChange={(value) => setProfile((current) => ({ ...current, [field.name]: value }))}
             />
           ))}

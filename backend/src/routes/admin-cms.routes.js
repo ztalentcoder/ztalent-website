@@ -178,6 +178,7 @@ const companyProfileFields = {
   location: { type: 'string', max: 160, nullable: true },
   hours: { type: 'string', max: 160, nullable: true },
   logoUrl: { type: 'url', max: 2048, nullable: true, managedImagePath: true },
+  homeIntroImageUrl: { type: 'url', max: 2048, nullable: true, managedImagePath: true },
 };
 
 const socialLinkFields = {

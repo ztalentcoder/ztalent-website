@@ -40,18 +40,19 @@ enum AdminRole {
 
 model CompanyProfile {
   /// The single company profile uses the fixed primary key value 1.
-  id          Int          @id @default(1) @db.SmallInt
-  name        String       @db.VarChar(120)
-  tagline     String?      @db.VarChar(180)
-  description String?      @db.Text
-  email       String?      @db.VarChar(320)
-  phone       String?      @db.VarChar(32)
-  location    String?      @db.VarChar(160)
-  hours       String?      @db.VarChar(160)
-  logoUrl     String?      @db.VarChar(2048)
-  createdAt   DateTime     @default(now()) @db.Timestamptz(3)
-  updatedAt   DateTime     @updatedAt @db.Timestamptz(3)
-  socialLinks SocialLink[]
+  id                 Int          @id @default(1) @db.SmallInt
+  name               String       @db.VarChar(120)
+  tagline            String?      @db.VarChar(180)
+  description        String?      @db.Text
+  email              String?      @db.VarChar(320)
+  phone              String?      @db.VarChar(32)
+  location           String?      @db.VarChar(160)
+  hours              String?      @db.VarChar(160)
+  logoUrl            String?      @db.VarChar(2048)
+  homeIntroImageUrl  String?      @db.VarChar(2048)
+  createdAt          DateTime     @default(now()) @db.Timestamptz(3)
+  updatedAt          DateTime     @updatedAt @db.Timestamptz(3)
+  socialLinks        SocialLink[]
 
   @@map("company_profiles")
 }

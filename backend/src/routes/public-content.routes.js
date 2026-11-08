@@ -84,6 +84,7 @@ function serializeCompanyProfile(profile) {
     location: profile.location,
     hours: profile.hours,
     logoUrl: profile.logoUrl,
+    homeIntroImageUrl: profile.homeIntroImageUrl,
     socialLinks: (profile.socialLinks ?? []).map(({ platform, url }) => ({ platform, url })),
   };
 }
@@ -237,6 +238,7 @@ export function createPublicContentRouter() {
         location: true,
         hours: true,
         logoUrl: true,
+        homeIntroImageUrl: true,
         socialLinks: {
           where: { isActive: true },
           select: { platform: true, url: true },
@@ -245,6 +247,33 @@ export function createPublicContentRouter() {
       },
     });
     response.json({ status: 'success', item: serializeCompanyProfile(profile) });
+  }));
+
+  router.get('/statistics', safely(async (request, response) => {
+    const prisma = request.app.locals.prisma;
+    const [academicCourses, projects, services, blogArticles] = await Promise.all([
+      prisma.academicCourse.count({ where: { status: 'PUBLISHED' } }),
+      prisma.project.count({ where: { status: 'PUBLISHED' } }),
+      prisma.service.count({
+        where: { status: 'PUBLISHED', businessArea: { status: 'PUBLISHED' } },
+      }),
+      prisma.blogPost.count({ where: { status: 'PUBLISHED' } }),
+    ]);
+    const countStatistic = (key, value, singular, plural) => ({
+      key,
+      value,
+      label: value === 1 ? singular : plural,
+    });
+
+    response.set('Cache-Control', 'no-store').json({
+      status: 'success',
+      statistics: [
+        countStatistic('academicCourses', academicCourses, 'Academic Course', 'Academic Courses'),
+        countStatistic('projects', projects, 'Published Project', 'Published Projects'),
+        countStatistic('services', services, 'Service', 'Services'),
+        countStatistic('blogArticles', blogArticles, 'Published Blog Article', 'Published Blog Articles'),
+      ],
+    });
   }));
 
   createListRoute(router, 'business-areas', {

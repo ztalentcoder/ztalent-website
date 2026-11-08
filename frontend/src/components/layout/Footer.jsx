@@ -23,6 +23,9 @@ export default function Footer() {
   const { company } = usePublicCompany();
   const [logoFailed, setLogoFailed] = useState(false);
   const logoUrl = getPublicImageUrl(company?.logoUrl);
+  const email = company?.email || 'ztalentcoder@gmail.com';
+  const phone = company?.phone || '+255 618 429 083';
+  const phoneHref = phone.replace(/[^\d+]/g, '');
 
   return (
     <footer className={styles.footer}>
@@ -52,8 +55,8 @@ export default function Footer() {
 
           <div className={styles.linkColumn}>
             <h2>Contact</h2>
-            {company?.email && <a href={`mailto:${company.email}`}>{company.email}</a>}
-            {company?.phone && <a href={`tel:${company.phone}`}>{company.phone}</a>}
+            <a href={`mailto:${email}`}>{email}</a>
+            <a href={`tel:${phoneHref}`}>{phone}</a>
             {company?.location && <Link to="/contact">{company.location}</Link>}
           </div>
         </div>

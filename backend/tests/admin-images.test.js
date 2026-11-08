@@ -49,7 +49,9 @@ async function createFixture(t, { role = 'EDITOR' } = {}) {
       }),
       update: async () => ({}),
     },
-    companyProfile: { findFirst: async ({ where }) => references.has(where.logoUrl) ? { id: 'record' } : null },
+    companyProfile: {
+      findFirst: async ({ where }) => references.has(where.logoUrl || where.homeIntroImageUrl) ? { id: 'record' } : null,
+    },
     businessArea: { findFirst: async ({ where }) => references.has(where.imageUrl) ? { id: 'record' } : null },
     project: { findFirst: async ({ where }) => references.has(where.imageUrl) ? { id: 'record' } : null },
     blogPost: { findFirst: async ({ where }) => references.has(where.coverImageUrl) ? { id: 'record' } : null },
