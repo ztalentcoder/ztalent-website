@@ -175,8 +175,30 @@ function serializeStatistic(statistic) {
     key: statistic.key,
     label: statistic.label,
     value: statistic.value,
+    description: statistic.description,
     suffix: statistic.suffix,
   };
+}
+
+async function getPublicStatistics(prisma) {
+  const [records, projects, academicCourses] = await Promise.all([
+    prisma.siteStatistic.findMany({
+      where: {
+        isActive: true,
+        key: { in: ['projects-delivered', 'academic-courses', 'institutions-served', 'students-reached'] },
+      },
+      select: { key: true, label: true, description: true, value: true, suffix: true },
+      orderBy: [{ sortOrder: 'asc' }, { label: 'asc' }],
+    }),
+    prisma.project.count({ where: { status: 'PUBLISHED' } }),
+    prisma.academicCourse.count({ where: { status: 'PUBLISHED' } }),
+  ]);
+  const counts = { 'projects-delivered': projects, 'academic-courses': academicCourses };
+
+  return records.map((record) => ({
+    ...record,
+    value: Object.hasOwn(counts, record.key) ? counts[record.key] : record.value,
+  }));
 }
 
 function createListRoute(router, path, {
@@ -250,29 +272,16 @@ export function createPublicContentRouter() {
   }));
 
   router.get('/statistics', safely(async (request, response) => {
-    const prisma = request.app.locals.prisma;
-    const [academicCourses, projects, services, blogArticles] = await Promise.all([
-      prisma.academicCourse.count({ where: { status: 'PUBLISHED' } }),
-      prisma.project.count({ where: { status: 'PUBLISHED' } }),
-      prisma.service.count({
-        where: { status: 'PUBLISHED', businessArea: { status: 'PUBLISHED' } },
-      }),
-      prisma.blogPost.count({ where: { status: 'PUBLISHED' } }),
-    ]);
-    const countStatistic = (key, value, singular, plural) => ({
-      key,
-      value,
-      label: value === 1 ? singular : plural,
-    });
+    const statistics = await getPublicStatistics(request.app.locals.prisma);
 
     response.set('Cache-Control', 'no-store').json({
       status: 'success',
-      statistics: [
-        countStatistic('academicCourses', academicCourses, 'Academic Course', 'Academic Courses'),
-        countStatistic('projects', projects, 'Published Project', 'Published Projects'),
-        countStatistic('services', services, 'Service', 'Services'),
-        countStatistic('blogArticles', blogArticles, 'Published Blog Article', 'Published Blog Articles'),
-      ],
+      statistics: statistics.map(({ key, label, description, value }) => ({
+        key,
+        label,
+        description,
+        value,
+      })),
     });
   }));
 
@@ -441,13 +450,13 @@ export function createPublicContentRouter() {
     orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
   });
 
-  createListRoute(router, 'site-statistics', {
-    modelName: 'siteStatistic',
-    select: { key: true, label: true, value: true, suffix: true },
-    serialize: serializeStatistic,
-    where: () => ({ isActive: true }),
-    orderBy: [{ sortOrder: 'asc' }, { label: 'asc' }],
-  });
+  router.get('/site-statistics', safely(async (request, response) => {
+    const unknown = Object.keys(request.query).filter((key) => !['page', 'pageSize'].includes(key));
+    if (unknown.length) throw badRequest();
+    const { page, pageSize } = parsePage(request.query);
+    const items = (await getPublicStatistics(request.app.locals.prisma)).map(serializeStatistic);
+    collectionResponse(response, items.slice((page - 1) * pageSize, page * pageSize), page, pageSize, items.length);
+  }));
 
   return router;
 }

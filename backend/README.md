@@ -109,8 +109,9 @@ responses use explicit field selections and serializers; company contact fields
 and active social links are provided for the public website.
 
 - `GET /api/public/company-profile`
-- `GET /api/public/statistics` (live counts of published courses, projects,
-  services in published business areas, and blog articles; not cached)
+- `GET /api/public/statistics` (active editable statistic headings and
+  descriptions, with published project/course counts and saved institution/
+  student values; not cached)
 - `GET /api/public/business-areas` and `/api/public/business-areas/:slug`
 - `GET /api/public/services` (optional `businessArea` slug filter)
 - `GET /api/public/projects` (optional `businessArea` slug filter) and
@@ -127,6 +128,7 @@ and active social links are provided for the public website.
 Content collections accept `page` and `pageSize` (maximum 50) and return the standard
 `{ status: "success", items, pagination }` response. Detail responses use
 `{ status: "success", item }`. Missing and unpublished slugs share a generic
-404 response. The statistics endpoint returns four numeric counts with
-singular/plural labels and does not use manually managed SiteStatistic entries.
+404 response. The statistics endpoint exposes active SiteStatistic records only. Project
+and course totals are counted from published records; institution and student
+values come from their saved SiteStatistic entries.
 Contact messages and administrative models are not exposed.

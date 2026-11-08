@@ -203,6 +203,74 @@ test('CMS mutations validate fields, normalize slugs, and return standard item r
   });
 });
 
+test('statistics CMS edits manual values and content but protects calculated counts and fixed records', async () => {
+  const automaticId = '123e4567-e89b-42d3-a456-426614174000';
+  const manualId = '123e4567-e89b-42d3-a456-426614174001';
+  const updates = [];
+  const app = cmsApp({
+    overrides: {
+      siteStatistic: {
+        ...createCmsPrisma().siteStatistic,
+        findUnique: async ({ where }) => ({
+          id: where.id,
+          key: where.id === automaticId ? 'projects-delivered' : 'institutions-served',
+        }),
+        update: async ({ where, data }) => {
+          updates.push({ where, data });
+          return { id: where.id, ...data };
+        },
+      },
+    },
+  });
+
+  await withServer(app, async (baseUrl) => {
+    const update = (id, body, method = 'PATCH') => fetch(`${baseUrl}/api/admin/site-statistics/${id}`, {
+      method,
+      headers: { ...adminHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+
+    const contentUpdate = await update(automaticId, {
+      label: 'Projects Delivered',
+      description: 'Solutions shipped.',
+      sortOrder: 1,
+      isActive: true,
+    });
+    assert.equal(contentUpdate.status, 200);
+
+    const manualValueUpdate = await update(manualId, { value: 42 });
+    assert.equal(manualValueUpdate.status, 200);
+
+    const fakeCount = await update(automaticId, { value: 999 });
+    assert.equal(fakeCount.status, 400);
+    assert.equal((await fakeCount.json()).error.code, 'VALIDATION_ERROR');
+
+    const changeKey = await update(automaticId, { key: 'students-reached' });
+    assert.equal(changeKey.status, 400);
+
+    const create = await fetch(`${baseUrl}/api/admin/site-statistics`, {
+      method: 'POST',
+      headers: { ...adminHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ key: 'extra', label: 'Extra', description: 'Extra', value: 1 }),
+    });
+    assert.equal(create.status, 405);
+
+    const remove = await fetch(`${baseUrl}/api/admin/site-statistics/${automaticId}`, {
+      method: 'DELETE',
+      headers: adminHeaders(),
+    });
+    assert.equal(remove.status, 405);
+  });
+
+  assert.deepEqual(updates, [
+    {
+      where: { id: automaticId },
+      data: { label: 'Projects Delivered', description: 'Solutions shipped.', sortOrder: 1, isActive: true },
+    },
+    { where: { id: manualId }, data: { value: 42 } },
+  ]);
+});
+
 test('CMS routes require authentication and allow only editor roles for content', async () => {
   await withServer(cmsApp({}), async (baseUrl) => {
     const unauthenticated = await fetch(`${baseUrl}/api/admin/business-areas`);

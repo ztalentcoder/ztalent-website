@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Button from '../../components/common/Button.jsx';
 import PrototypeIcon from '../../components/common/PrototypeIcon.jsx';
 import SectionHeading from '../../components/common/SectionHeading.jsx';
@@ -37,10 +37,10 @@ const highlights = [
 ];
 
 const statisticDefinitions = [
-  { key: 'academicCourses', singular: 'Academic Course', plural: 'Academic Courses' },
-  { key: 'projects', singular: 'Published Project', plural: 'Published Projects' },
-  { key: 'services', singular: 'Service', plural: 'Services' },
-  { key: 'blogArticles', singular: 'Published Blog Article', plural: 'Published Blog Articles' },
+  { key: 'projects-delivered', label: 'Projects Delivered', description: 'Digital solutions built to address real-world challenges.' },
+  { key: 'academic-courses', label: 'Academic Courses', description: 'Learning opportunities available to develop technology skills.' },
+  { key: 'institutions-served', label: 'Institutions Served', description: 'Organizations supported through our technology solutions.' },
+  { key: 'students-reached', label: 'Students Reached', description: 'Learners reached through our academic and training initiatives.' },
 ];
 
 const workSteps = [
@@ -115,6 +115,61 @@ function BusinessAreaCard({ area, link, to }) {
   );
 }
 
+function useStatisticsVisibility(ref) {
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    if (!ref.current) return undefined;
+    if (!('IntersectionObserver' in window)) {
+      setVisible(true);
+      return undefined;
+    }
+
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) {
+        setVisible(true);
+        observer.disconnect();
+      }
+    }, { threshold: 0.2 });
+    observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, [ref]);
+
+  return visible;
+}
+
+function AnimatedStatistic({ value, active }) {
+  const [displayValue, setDisplayValue] = useState(0);
+  const displayValueRef = useRef(0);
+
+  useEffect(() => {
+    if (value === 0 || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+      displayValueRef.current = value;
+      setDisplayValue(value);
+      return undefined;
+    }
+    if (!active) return undefined;
+
+    let frame;
+    let startTime;
+    const startValue = displayValueRef.current;
+    const duration = 1200;
+    const animate = (time) => {
+      if (startTime === undefined) startTime = time;
+      const progress = Math.min((time - startTime) / duration, 1);
+      const eased = 1 - ((1 - progress) ** 3);
+      const nextValue = Math.round(startValue + (value - startValue) * eased);
+      displayValueRef.current = nextValue;
+      setDisplayValue(nextValue);
+      if (progress < 1) frame = window.requestAnimationFrame(animate);
+    };
+    frame = window.requestAnimationFrame(animate);
+    return () => window.cancelAnimationFrame(frame);
+  }, [active, value]);
+
+  return displayValue;
+}
+
 export default function HomePage() {
   const { company } = usePublicCompany();
   const statistics = usePublicContent('statistics', {}, { refreshIntervalMs: 60_000 });
@@ -122,7 +177,11 @@ export default function HomePage() {
   const testimonials = usePublicContent('testimonials', { pageSize: 3 });
   const publishedAreas = areas.data?.items ?? [];
   const publishedTestimonials = testimonials.data?.items ?? [];
-  const statisticValues = new Map((statistics.data?.statistics ?? []).map((metric) => [metric.key, metric]));
+  const statsSection = useRef(null);
+  const statisticsVisible = useStatisticsVisibility(statsSection);
+  const metrics = statistics.status === 'success'
+    ? (statistics.data?.statistics ?? [])
+    : statisticDefinitions.map((metric) => ({ ...metric, value: 0 }));
   const [introImageFailed, setIntroImageFailed] = useState(false);
   const [activeHeroSlide, setActiveHeroSlide] = useState(0);
   const [heroSlideInteraction, setHeroSlideInteraction] = useState(0);
@@ -266,26 +325,31 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className={styles.stats} aria-label="Ztalent Coder at a glance" aria-busy={statistics.status === 'loading'}>
-        <div className={`${styles.container} ${styles.statsGrid}`}>
-          {statisticDefinitions.map(({ key, singular, plural }) => {
-            const metric = statisticValues.get(key);
-            const value = Number.isInteger(metric?.value) && metric.value >= 0 ? metric.value : 0;
-            const label = metric?.label || (value === 1 ? singular : plural);
-            return (
-              <article className={styles.statCard} key={key}>
-                <span className={styles.statIcon}><PrototypeIcon name="projects" /></span>
-                <strong>{value}</strong>
-                <span className={styles.statLabel}>{label}</span>
-              </article>
-            );
-          })}
-          {statistics.status === 'error' && (
-            <div className={styles.statisticsError} role="alert">
-              <span>Statistics are temporarily unavailable.</span>
-              <button type="button" onClick={statistics.retry}>Try again</button>
-            </div>
-          )}
+      <section ref={statsSection} className={styles.stats} aria-label="Ztalent Coder at a glance" aria-busy={statistics.status === 'loading'}>
+        <div className={styles.container}>
+          <SectionHeading
+            className={styles.statsHeading}
+            id="home-statistics-heading"
+            title="Our Impact in Numbers"
+            description="A snapshot of our achievements, the solutions we deliver, and the communities we reach."
+          />
+          <div className={styles.statsGrid}>
+            {metrics.map((metric) => {
+              const value = Number.isInteger(metric?.value) && metric.value >= 0 ? metric.value : 0;
+              return (
+                <article className={styles.statCard} key={metric.key}>
+                  <strong><AnimatedStatistic value={value} active={statisticsVisible} /></strong>
+                  <h3 className={styles.statLabel}>{metric.label}</h3>
+                </article>
+              );
+            })}
+            {statistics.status === 'error' && (
+              <div className={styles.statisticsError} role="alert">
+                <span>Statistics are temporarily unavailable.</span>
+                <button type="button" onClick={statistics.retry}>Try again</button>
+              </div>
+            )}
+          </div>
         </div>
       </section>
 

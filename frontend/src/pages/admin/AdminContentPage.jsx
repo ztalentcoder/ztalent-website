@@ -79,6 +79,9 @@ function ResourceManager({ resource, definition }) {
   const [relationOptions, setRelationOptions] = useState({});
   const [imageFiles, setImageFiles] = useState({});
   const [imageProgress, setImageProgress] = useState({});
+  const isAutomaticStatistic = (field) => resource === 'site-statistics'
+    && field.name === 'value'
+    && ['projects-delivered', 'academic-courses'].includes(selected?.key);
 
   const loadItems = useCallback(async () => {
     setLoading(true);
@@ -158,7 +161,7 @@ function ResourceManager({ resource, definition }) {
 
     const body = {};
     for (const field of definition.fields) {
-      if (field.readOnly) continue;
+    if (field.readOnly || isAutomaticStatistic(field)) continue;
       const value = form[field.name];
       body[field.name] = field.type === 'number'
         ? (value === '' ? null : Number(value))
@@ -252,9 +255,11 @@ function ResourceManager({ resource, definition }) {
         <div>
           <p className={styles.eyebrow}>Content management</p>
           <h1>{definition.title}</h1>
-          <p>Manage website content and publication state.</p>
+          <p>{resource === 'site-statistics'
+            ? 'Edit statistic headings, descriptions, order, and visibility. Project and course totals are automatic; only institution and student values are editable.'
+            : 'Manage website content and publication state.'}</p>
         </div>
-        {!definition.readOnly && (
+        {!definition.readOnly && definition.allowCreate !== false && (
           <button className={styles.primaryButton} type="button" onClick={startCreate}>
             Create {definition.singular}
           </button>
@@ -275,7 +280,7 @@ function ResourceManager({ resource, definition }) {
             }}>Cancel</button>
           </div>
           <div className={styles.fields}>
-            {definition.fields.filter((field) => !field.readOnly).map((field) => (
+            {definition.fields.filter((field) => !field.readOnly && !isAutomaticStatistic(field)).map((field) => (
               <FormField
                 key={field.name}
                 field={field}
@@ -369,7 +374,7 @@ function ResourceManager({ resource, definition }) {
                     <button className={styles.textButton} type="button" onClick={() => startEdit(item)}>
                       {definition.readOnly ? 'View / update' : 'Edit'}
                     </button>
-                    {!definition.readOnly && (
+                    {!definition.readOnly && definition.allowDelete !== false && (
                       <button className={styles.dangerButton} type="button" onClick={() => void removeItem(item)}>
                         Delete
                       </button>
@@ -463,6 +468,7 @@ function FormField({ field, value, onChange, options, file, onFileChange, upload
           id={id}
           type={field.type ?? 'text'}
           required={field.required}
+          min={field.min}
           maxLength={field.maxLength}
           value={value ?? ''}
           onChange={(event) => onChange(event.target.value)}

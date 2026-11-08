@@ -80,20 +80,25 @@ test('public company profile exposes only allowlisted contact fields and active 
   assert.equal(Object.hasOwn(query.select, 'passwordHash'), false);
 });
 
-test('public statistics count only records eligible for public publication', async () => {
+test('public statistics return active editable content and accurate published project and course counts', async () => {
   const queries = {};
   const app = publicApp(createPublicPrisma({
+    siteStatistic: {
+      findMany: async (options) => {
+        queries.siteStatistic = options;
+        return [
+          { key: 'projects-delivered', label: 'Delivered', description: 'Project count', value: 91, suffix: null },
+          { key: 'academic-courses', label: 'Courses', description: 'Course count', value: 92, suffix: null },
+          { key: 'institutions-served', label: 'Institutions', description: 'Manual count', value: 14, suffix: null },
+          { key: 'students-reached', label: 'Students', description: 'Manual count', value: 250, suffix: null },
+        ];
+      },
+    },
     academicCourse: {
       count: async ({ where }) => { queries.academicCourse = where; return 1; },
     },
     project: {
       count: async ({ where }) => { queries.project = where; return 2; },
-    },
-    service: {
-      count: async ({ where }) => { queries.service = where; return 0; },
-    },
-    blogPost: {
-      count: async ({ where }) => { queries.blogPost = where; return 3; },
     },
   }));
 
@@ -104,21 +109,29 @@ test('public statistics count only records eligible for public publication', asy
     assert.deepEqual(await response.json(), {
       status: 'success',
       statistics: [
-        { key: 'academicCourses', value: 1, label: 'Academic Course' },
-        { key: 'projects', value: 2, label: 'Published Projects' },
-        { key: 'services', value: 0, label: 'Services' },
-        { key: 'blogArticles', value: 3, label: 'Published Blog Articles' },
+        { key: 'projects-delivered', label: 'Delivered', description: 'Project count', value: 2 },
+        { key: 'academic-courses', label: 'Courses', description: 'Course count', value: 1 },
+        { key: 'institutions-served', label: 'Institutions', description: 'Manual count', value: 14 },
+        { key: 'students-reached', label: 'Students', description: 'Manual count', value: 250 },
       ],
     });
+    const legacy = await fetch(`${baseUrl}/api/public/site-statistics?pageSize=50`);
+    assert.equal(legacy.status, 200);
+    const legacyPayload = await legacy.json();
+    assert.deepEqual(legacyPayload.items.map(({ key, value }) => ({ key, value })), [
+      { key: 'projects-delivered', value: 2 },
+      { key: 'academic-courses', value: 1 },
+      { key: 'institutions-served', value: 14 },
+      { key: 'students-reached', value: 250 },
+    ]);
   });
 
-  assert.deepEqual(queries.academicCourse, { status: 'PUBLISHED' });
   assert.deepEqual(queries.project, { status: 'PUBLISHED' });
-  assert.deepEqual(queries.service, {
-    status: 'PUBLISHED',
-    businessArea: { status: 'PUBLISHED' },
+  assert.deepEqual(queries.academicCourse, { status: 'PUBLISHED' });
+  assert.deepEqual(queries.siteStatistic.where, {
+    isActive: true,
+    key: { in: ['projects-delivered', 'academic-courses', 'institutions-served', 'students-reached'] },
   });
-  assert.deepEqual(queries.blogPost, { status: 'PUBLISHED' });
 });
 
 test('public collections select published records, serialize explicit fields, and paginate', async () => {
@@ -300,8 +313,10 @@ test('all public content collections constrain database reads to public records'
     assert.equal(whereByModel[name].status, 'PUBLISHED', name);
   }
   assert.deepEqual(whereByModel.blogCategory, { posts: { some: { status: 'PUBLISHED' } } });
-  assert.deepEqual(whereByModel.siteStatistic, { isActive: true });
-  assert.deepEqual(whereByModel.service.businessArea, { status: 'PUBLISHED' });
+  assert.deepEqual(whereByModel.siteStatistic, {
+    isActive: true,
+    key: { in: ['projects-delivered', 'academic-courses', 'institutions-served', 'students-reached'] },
+  });
 });
 
 test('published project, blog, course, and business-area detail routes use slug allowlists', async () => {

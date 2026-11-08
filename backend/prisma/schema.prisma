@@ -231,6 +231,7 @@ model SiteStatistic {
   id        String   @id @default(uuid()) @db.Uuid
   key       String   @unique @db.VarChar(80)
   label     String   @db.VarChar(120)
+  description String   @default("") @db.Text
   value     Int
   suffix    String?  @db.VarChar(20)
   sortOrder Int      @default(0)

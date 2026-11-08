@@ -180,28 +180,14 @@ describe('HomePage hero slideshow', () => {
 
 describe('HomePage published statistics', () => {
   it('always displays four statistics with zero values while counts are empty', () => {
-    render(<MemoryRouter><HomePage /></MemoryRouter>);
-    const section = screen.getByRole('region', { name: 'Ztalent Coder at a glance' });
-    const cards = within(section).getAllByRole('article');
-
-    expect(cards).toHaveLength(4);
-    expect(cards.map((card) => card.textContent)).toEqual([
-      '0Academic Courses',
-      '0Published Projects',
-      '0Services',
-      '0Published Blog Articles',
-    ]);
-  });
-
-  it('renders the latest API counts and singular labels', () => {
     usePublicContent.mockImplementation((resource) => ({
       data: resource === 'statistics'
         ? {
           statistics: [
-            { key: 'academicCourses', value: 1, label: 'Academic Course' },
-            { key: 'projects', value: 2, label: 'Published Projects' },
-            { key: 'services', value: 0, label: 'Services' },
-            { key: 'blogArticles', value: 1, label: 'Published Blog Article' },
+            { key: 'projects-delivered', label: 'Projects Delivered', description: 'Digital solutions built to address real-world challenges.', value: 0 },
+            { key: 'academic-courses', label: 'Academic Courses', description: 'Learning opportunities available to develop technology skills.', value: 0 },
+            { key: 'institutions-served', label: 'Institutions Served', description: 'Organizations supported through our technology solutions.', value: 0 },
+            { key: 'students-reached', label: 'Students Reached', description: 'Learners reached through our academic and training initiatives.', value: 0 },
           ],
         }
         : { items: resource === 'business-areas' ? areas : [] },
@@ -210,11 +196,74 @@ describe('HomePage published statistics', () => {
 
     render(<MemoryRouter><HomePage /></MemoryRouter>);
     const section = screen.getByRole('region', { name: 'Ztalent Coder at a glance' });
-    expect(within(section).getAllByRole('article').map((card) => card.textContent)).toEqual([
-      '1Academic Course',
-      '2Published Projects',
-      '0Services',
-      '1Published Blog Article',
+    const cards = within(section).getAllByRole('article');
+
+    expect(within(section).getByRole('heading', { name: 'Our Impact in Numbers' })).toBeInTheDocument();
+    expect(within(section).getByText(
+      'A snapshot of our achievements, the solutions we deliver, and the communities we reach.',
+    )).toBeInTheDocument();
+    expect(cards).toHaveLength(4);
+    expect(cards.map((card) => card.textContent)).toEqual([
+      '0Projects Delivered',
+      '0Academic Courses',
+      '0Institutions Served',
+      '0Students Reached',
     ]);
+    expect(cards.some((card) => card.textContent.includes('Digital solutions built'))).toBe(false);
+  });
+
+  it('renders API labels and descriptions and animates to the exact count', async () => {
+    vi.useFakeTimers();
+    let projectCount = 50;
+    usePublicContent.mockImplementation((resource) => ({
+      data: resource === 'statistics'
+        ? {
+          statistics: [
+            { key: 'projects-delivered', value: projectCount, label: 'Projects Delivered', description: 'Digital solutions built to address real-world challenges.' },
+            { key: 'academic-courses', value: 1, label: 'Courses Available', description: 'Course description.' },
+          ],
+        }
+        : { items: resource === 'business-areas' ? areas : [] },
+      status: 'success',
+    }));
+
+    try {
+      const { rerender } = render(<MemoryRouter><HomePage /></MemoryRouter>);
+      const section = screen.getByRole('region', { name: 'Ztalent Coder at a glance' });
+      expect(within(section).getAllByRole('article')).toHaveLength(2);
+      expect(within(section).getByText(
+        'A snapshot of our achievements, the solutions we deliver, and the communities we reach.',
+      )).toBeInTheDocument();
+      expect(within(section).queryByText('Digital solutions built to address real-world challenges.')).not.toBeInTheDocument();
+
+      await act(async () => { await vi.advanceTimersByTimeAsync(1300); });
+      expect(within(section).getAllByRole('article').map((card) => card.querySelector('strong').textContent)).toEqual(['50', '1']);
+
+      projectCount = 75;
+      rerender(<MemoryRouter><HomePage /></MemoryRouter>);
+      await act(async () => { await vi.advanceTimersByTimeAsync(1300); });
+      expect(within(section).getAllByRole('article')[0].querySelector('strong')).toHaveTextContent('75');
+    } finally {
+      cleanup();
+      vi.useRealTimers();
+    }
+  });
+
+  it('shows final values without animation when reduced motion is requested', () => {
+    const originalMatchMedia = window.matchMedia;
+    window.matchMedia = vi.fn(() => ({ matches: true }));
+    usePublicContent.mockImplementation((resource) => ({
+      data: resource === 'statistics'
+        ? { statistics: [{ key: 'projects-delivered', value: 50, label: 'Projects Delivered', description: 'Description.' }] }
+        : { items: resource === 'business-areas' ? areas : [] },
+      status: 'success',
+    }));
+    try {
+      render(<MemoryRouter><HomePage /></MemoryRouter>);
+      const section = screen.getByRole('region', { name: 'Ztalent Coder at a glance' });
+      expect(within(section).getByText('50')).toBeInTheDocument();
+    } finally {
+      window.matchMedia = originalMatchMedia;
+    }
   });
 });

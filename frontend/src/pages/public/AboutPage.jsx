@@ -1,8 +1,10 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import SectionHeading from '../../components/common/SectionHeading.jsx';
 import { CallToAction, CardGrid, ContentSection, InfoCard, PageHero } from '../../components/public/PublicPage.jsx';
 import { PageMetadata } from '../../components/public/PublicContentState.jsx';
 import { usePublicCompany } from '../../context/PublicContentContext.jsx';
+import { getPublicImageUrl } from '../../services/publicContentApi.js';
 import styles from '../../components/public/PublicPage.module.css';
 
 const values = [
@@ -14,6 +16,10 @@ const values = [
 
 export default function AboutPage() {
   const { company } = usePublicCompany();
+  const [imageFailed, setImageFailed] = useState(false);
+  const aboutImageUrl = getPublicImageUrl(company?.homeIntroImageUrl) || '/images/image1.jpg';
+
+  useEffect(() => setImageFailed(false), [aboutImageUrl]);
 
   return (
     <main>
@@ -27,6 +33,13 @@ export default function AboutPage() {
           title="Local talent can solve local problems"
           description="Ztalent Coder started from a simple idea. We teach people to code, then use that talent to build systems and data solutions for communities and institutions. Our three pillars feed each other: Academic, Tech Solutions and Data & AI."
         />
+        <div className={styles.aboutMainImage}>
+          <img
+            src={imageFailed ? '/images/image1.jpg' : aboutImageUrl}
+            alt="A coding workspace representing Ztalent Coder's training and technology solutions"
+            onError={() => setImageFailed(true)}
+          />
+        </div>
         <CardGrid>
           <InfoCard title="Mission" description="Make technology skills and tools available to everyone." />
           <InfoCard title="Vision" description="A community that solves its own problems with technology and data." />

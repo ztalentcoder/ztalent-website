@@ -15,6 +15,12 @@ const CONTACT_TOPICS = [
 ];
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const CONTROL_CHARACTERS = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g;
+const SITE_STATISTIC_KEYS = [
+  'projects-delivered',
+  'academic-courses',
+  'institutions-served',
+  'students-reached',
+];
 
 const resourceConfigs = {
   'business-areas': {
@@ -156,16 +162,33 @@ const resourceConfigs = {
   'site-statistics': {
     model: 'siteStatistic',
     fields: {
-      key: { type: 'string', required: true, max: 80 },
       label: { type: 'string', required: true, max: 120 },
+      description: { type: 'string', required: true },
       value: { type: 'integer', required: true, min: 0 },
-      suffix: { type: 'string', max: 20, nullable: true },
       sortOrder: { type: 'integer', min: 0 },
       isActive: { type: 'boolean' },
     },
-    search: ['key', 'label', 'suffix'],
+    search: ['key', 'label', 'description'],
     filters: { isActive: { field: 'isActive', type: 'boolean' } },
     orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
+    baseWhere: { key: { in: SITE_STATISTIC_KEYS } },
+    allowCreate: false,
+    allowDelete: false,
+    validateUpdate: async (request, id, data) => {
+      const statistic = await getPrisma(request).siteStatistic.findUnique({
+        where: { id },
+        select: { key: true },
+      });
+      if (!statistic) {
+        throw new HttpError(404, 'RESOURCE_NOT_FOUND', 'The requested resource was not found.');
+      }
+      if (!SITE_STATISTIC_KEYS.includes(statistic.key)) {
+        throw new HttpError(404, 'RESOURCE_NOT_FOUND', 'The requested resource was not found.');
+      }
+      if (['projects-delivered', 'academic-courses'].includes(statistic.key) && Object.hasOwn(data, 'value')) {
+        throw invalid('Automatically calculated statistic values cannot be changed.');
+      }
+    },
   },
 };
 
@@ -322,7 +345,7 @@ function createResourceRoutes(router, path, config) {
   router.get(collectionPath, async (request, response) => {
     const page = parsePageValue(request.query.page, 1, 1_000_000);
     const pageSize = parsePageValue(request.query.pageSize, 20, 100);
-    const where = parseFilters(request.query, config);
+    const where = { ...parseFilters(request.query, config), ...config.baseWhere };
     const model = modelFor(request);
     const [items, total] = await Promise.all([
       model.findMany({
@@ -341,6 +364,9 @@ function createResourceRoutes(router, path, config) {
   });
 
   router.post(collectionPath, async (request, response) => {
+    if (config.allowCreate === false) {
+      throw new HttpError(405, 'METHOD_NOT_ALLOWED', 'This resource cannot be created.');
+    }
     const data = parseBody(request.body, config.fields, { creating: true });
     const item = await modelFor(request).create({ data });
     sendItem(response, item, 201);
@@ -356,6 +382,7 @@ function createResourceRoutes(router, path, config) {
   const update = async (request, response) => {
     validateId(request.params.id);
     const data = parseBody(request.body, config.fields);
+    if (config.validateUpdate) await config.validateUpdate(request, request.params.id, data);
     const item = await modelFor(request).update({ where: { id: request.params.id }, data });
     sendItem(response, item);
   };
@@ -363,6 +390,9 @@ function createResourceRoutes(router, path, config) {
   router.put(`${collectionPath}/:id`, update);
 
   router.delete(`${collectionPath}/:id`, async (request, response) => {
+    if (config.allowDelete === false) {
+      throw new HttpError(405, 'METHOD_NOT_ALLOWED', 'This resource cannot be deleted.');
+    }
     validateId(request.params.id);
     await modelFor(request).delete({ where: { id: request.params.id } });
     response.json({ status: 'success' });
