@@ -2,10 +2,12 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createApp } from './helpers.js';
 import { withServer } from './helpers.js';
+import { DEFAULT_ABOUT_PAGE_CONTENT } from '../src/services/about-page-content.js';
 
 function createPublicPrisma(overrides = {}) {
   const names = [
     'companyProfile',
+    'aboutPageContent',
     'businessArea',
     'service',
     'project',
@@ -420,4 +422,83 @@ test('public content API does not expose write operations', async () => {
     const response = await fetch(`${baseUrl}/api/public/projects`, { method: 'POST' });
     assert.equal(response.status, 404);
   });
+});
+
+test('public About page returns active sections and values in display order without admin metadata', async () => {
+  const content = structuredClone(DEFAULT_ABOUT_PAGE_CONTENT);
+  content.story.isActive = false;
+  content.closing.sortOrder = 0;
+  content.whoWeAre.sortOrder = 8;
+  content.coreValues.values[0].isActive = false;
+  content.coreValues.values[1].sortOrder = 8;
+  content.coreValues.values[2].sortOrder = 0;
+  let query;
+  const app = publicApp(createPublicPrisma({
+    aboutPageContent: {
+      findUnique: async (options) => {
+        query = options;
+        return { content };
+      },
+    },
+  }));
+  await withServer(app, async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/api/public/about-page`);
+    assert.equal(response.status, 200);
+    assert.equal(response.headers.get('cache-control'), 'no-store');
+    const { item } = await response.json();
+    assert.deepEqual(Object.keys(item), ['missionVision', 'coreValues', 'philosophy', 'team', 'whoWeAre']);
+    assert.deepEqual(item.coreValues.values.map(({ title }) => title), ['INTEGRITY', 'COLLABORATION', 'CONTINUOUS LEARNING', 'IMPACT', 'EXCELLENCE']);
+    assert.equal(Object.hasOwn(item.whoWeAre, 'isActive'), false);
+    assert.equal(Object.hasOwn(item.whoWeAre, 'sortOrder'), false);
+    assert.equal(item.whoWeAre.displayOrder, 8);
+    assert.equal(Object.hasOwn(item.coreValues.values[0], 'isActive'), false);
+    assert.equal(Object.hasOwn(item, 'closing'), false);
+  });
+  assert.deepEqual(query, { where: { id: 1 }, select: { content: true } });
+});
+
+test('public team members expose only the card fields and an optional portfolio URL', async () => {
+  let query;
+  const app = publicApp(createPublicPrisma({
+    teamMember: {
+      findMany: async (options) => {
+        query = options;
+        return [{
+          name: 'Ada Example',
+          role: 'Lead Engineer',
+          photoUrl: 'https://images.example.test/ada.webp',
+          portfolioUrl: 'https://ada.example.test',
+          bio: 'Private biography',
+          linkedinUrl: 'https://linkedin.example/ada',
+          githubUrl: 'https://github.example/ada',
+        }, {
+          name: 'Grace Example',
+          role: 'Designer',
+          photoUrl: 'https://images.example.test/grace.webp',
+          portfolioUrl: null,
+          bio: 'Another private biography',
+        }];
+      },
+      count: async () => 2,
+    },
+  }));
+
+  await withServer(app, async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/api/public/team-members`);
+    assert.equal(response.status, 200);
+    const payload = await response.json();
+    assert.deepEqual(payload.items, [{
+      name: 'Ada Example',
+      role: 'Lead Engineer',
+      photoUrl: 'https://images.example.test/ada.webp',
+      portfolioUrl: 'https://ada.example.test',
+    }, {
+      name: 'Grace Example',
+      role: 'Designer',
+      photoUrl: 'https://images.example.test/grace.webp',
+      portfolioUrl: null,
+    }]);
+  });
+  assert.deepEqual(query.select, { name: true, role: true, photoUrl: true, portfolioUrl: true });
+  assert.deepEqual(query.where, { status: 'PUBLISHED' });
 });

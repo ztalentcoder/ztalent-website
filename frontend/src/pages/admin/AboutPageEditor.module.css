@@ -1,0 +1,74 @@
+.form {
+  display: grid;
+  gap: 18px;
+}
+
+.section {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 20px;
+  background: var(--card);
+}
+
+.section legend {
+  padding: 0 8px;
+  color: var(--ink);
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.items {
+  display: grid;
+  gap: 14px;
+  margin-top: 20px;
+}
+
+.item {
+  min-width: 0;
+  border-top: 1px solid var(--line);
+  padding-top: 16px;
+}
+
+.itemHeading {
+  margin-bottom: 12px;
+  color: var(--deep-blue);
+}
+
+.itemHeading h3 {
+  font-size: 1rem;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.cancelButton {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 9px 15px;
+  background: var(--background);
+  color: var(--ink);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+}
+
+.cancelButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.cancelButton:focus-visible {
+  outline: 3px solid #7cc0f5;
+  outline-offset: 2px;
+}
+
+@media (max-width: 640px) {
+  .section {
+    padding: 16px 12px;
+  }
+}

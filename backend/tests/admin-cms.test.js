@@ -2,9 +2,11 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createApp } from './helpers.js';
 import { withServer } from './helpers.js';
+import { DEFAULT_ABOUT_PAGE_CONTENT } from '../src/services/about-page-content.js';
 
 const resourceModels = [
   'companyProfile',
+  'aboutPageContent',
   'socialLink',
   'businessArea',
   'service',
@@ -621,4 +623,113 @@ test('social-link management is scoped to the singleton company profile', async 
     isActive: true,
     platform: { contains: 'link', mode: 'insensitive' },
   });
+});
+
+test('team member CMS manages portfolio details without biography fields', async () => {
+  let created;
+  const app = cmsApp({
+    overrides: {
+      teamMember: {
+        ...createCmsPrisma().teamMember,
+        create: async ({ data }) => {
+          created = data;
+          return { id: 'team-id', ...data };
+        },
+      },
+    },
+  });
+
+  await withServer(app, async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/api/admin/team-members`, {
+      method: 'POST',
+      headers: { ...adminHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: 'Ada Example',
+        role: 'Lead Engineer',
+        photoUrl: 'https://images.example.test/ada.webp',
+        portfolioUrl: 'https://ada.example.test',
+        status: 'PUBLISHED',
+        sortOrder: 2,
+      }),
+    });
+    assert.equal(response.status, 201);
+    assert.deepEqual((await response.json()).item, { id: 'team-id', ...created });
+
+    const rejectedBiography = await fetch(`${baseUrl}/api/admin/team-members`, {
+      method: 'POST',
+      headers: { ...adminHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: 'Another Member',
+        role: 'Designer',
+        bio: 'Biography is no longer managed here.',
+        status: 'DRAFT',
+      }),
+    });
+    assert.equal(rejectedBiography.status, 400);
+    assert.equal((await rejectedBiography.json()).error.code, 'VALIDATION_ERROR');
+  });
+  assert.deepEqual(created, {
+    name: 'Ada Example',
+    role: 'Lead Engineer',
+    photoUrl: 'https://images.example.test/ada.webp',
+    portfolioUrl: 'https://ada.example.test',
+    status: 'PUBLISHED',
+    sortOrder: 2,
+  });
+});
+
+test('About page editor returns defaults and saves validated full content for editors', async () => {
+  let upsertOptions;
+  const content = structuredClone(DEFAULT_ABOUT_PAGE_CONTENT);
+  const app = cmsApp({
+    role: 'EDITOR',
+    overrides: {
+      aboutPageContent: {
+        findUnique: async () => null,
+        upsert: async (options) => {
+          upsertOptions = options;
+          return { content: options.create.content, updatedAt: new Date('2026-11-09T12:00:00Z') };
+        },
+      },
+    },
+  });
+
+  await withServer(app, async (baseUrl) => {
+    const unauthorized = await fetch(`${baseUrl}/api/admin/about-page`);
+    assert.equal(unauthorized.status, 401);
+
+    const load = await fetch(`${baseUrl}/api/admin/about-page`, { headers: adminHeaders() });
+    assert.equal(load.status, 200);
+    assert.deepEqual((await load.json()).item.content, DEFAULT_ABOUT_PAGE_CONTENT);
+
+    content.whoWeAre.title = 'Updated identity';
+    content.story.body = 'Updated story';
+    content.missionVision.missionDescription = 'Updated mission';
+    content.coreValues.values[0].description = 'Updated value';
+    content.philosophy.principles[0].description = 'Updated philosophy';
+    content.team.buttonLabel = 'Explore the team';
+    content.closing.finalStatement = 'Updated closing';
+    content.coreValues.values[0].isActive = false;
+    content.coreValues.values[1].sortOrder = 0;
+    content.team.destination = '/team';
+
+    const save = await fetch(`${baseUrl}/api/admin/about-page`, {
+      method: 'PUT',
+      headers: { ...adminHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content }),
+    });
+    assert.equal(save.status, 200);
+    assert.deepEqual((await save.json()).item.content, content);
+
+    const invalid = await fetch(`${baseUrl}/api/admin/about-page`, {
+      method: 'PUT',
+      headers: { ...adminHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content: { ...content, team: { ...content.team, destination: 'https://example.test' } } }),
+    });
+    assert.equal(invalid.status, 400);
+    assert.equal((await invalid.json()).error.code, 'VALIDATION_ERROR');
+  });
+  assert.deepEqual(upsertOptions.where, { id: 1 });
+  assert.equal(upsertOptions.create.id, 1);
+  assert.deepEqual(upsertOptions.create.content, content);
 });

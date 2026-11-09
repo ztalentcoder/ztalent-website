@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { HttpError } from '../utils/http-error.js';
+import { DEFAULT_ABOUT_PAGE_CONTENT, serializePublicAboutPage } from '../services/about-page-content.js';
 
 const MAX_PAGE = 1_000_000;
 const MAX_PAGE_SIZE = 50;
@@ -154,8 +155,8 @@ function serializeTeamMember(member) {
   return {
     name: member.name,
     role: member.role,
-    bio: member.bio,
     photoUrl: member.photoUrl,
+    portfolioUrl: member.portfolioUrl,
   };
 }
 
@@ -247,6 +248,17 @@ function createDetailRoute(router, path, { modelName, select, serialize, where =
 
 export function createPublicContentRouter() {
   const router = Router();
+
+  router.get('/about-page', safely(async (request, response) => {
+    const record = await request.app.locals.prisma.aboutPageContent.findUnique({
+      where: { id: 1 },
+      select: { content: true },
+    });
+    response.set('Cache-Control', 'no-store').json({
+      status: 'success',
+      item: serializePublicAboutPage(record?.content ?? DEFAULT_ABOUT_PAGE_CONTENT),
+    });
+  }));
 
   router.get('/company-profile', safely(async (request, response) => {
     const profile = await request.app.locals.prisma.companyProfile.findUnique({
@@ -431,7 +443,7 @@ export function createPublicContentRouter() {
 
   createListRoute(router, 'team-members', {
     modelName: 'teamMember',
-    select: { name: true, role: true, bio: true, photoUrl: true },
+    select: { name: true, role: true, photoUrl: true, portfolioUrl: true },
     serialize: serializeTeamMember,
     where: () => ({ status: 'PUBLISHED' }),
     orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],

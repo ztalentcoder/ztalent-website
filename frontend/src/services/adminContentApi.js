@@ -71,6 +71,14 @@ export function updateCompanyProfile(body) {
   return request('company-profile', { method: 'PUT', body });
 }
 
+export function getAboutPageContent() {
+  return request('about-page');
+}
+
+export function updateAboutPageContent(content) {
+  return request('about-page', { method: 'PUT', body: { content } });
+}
+
 export function uploadAdminImage(resource, file, onProgress = () => {}) {
   return new Promise((resolve, reject) => {
     const url = new URL(`${apiBaseUrl}/admin/images/${encodeURIComponent(resource)}`, window.location.origin);

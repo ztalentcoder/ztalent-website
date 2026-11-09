@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { requireAdminAuth } from '../middleware/require-admin-auth.js';
 import { requireAdminRole } from '../middleware/require-admin-role.js';
 import { HttpError } from '../utils/http-error.js';
+import { DEFAULT_ABOUT_PAGE_CONTENT, validateAboutPageContent } from '../services/about-page-content.js';
 
 const CONTENT_ROLES = ['SUPER_ADMIN', 'EDITOR'];
 const CONTENT_STATUSES = ['DRAFT', 'PUBLISHED', 'ARCHIVED'];
@@ -133,12 +134,12 @@ const resourceConfigs = {
     fields: {
       name: { type: 'string', required: true, max: 160 },
       role: { type: 'string', required: true, max: 120 },
-      bio: { type: 'string', nullable: true },
       photoUrl: { type: 'url', max: 2048, nullable: true, managedImagePath: true },
+      portfolioUrl: { type: 'url', max: 2048, nullable: true },
       status: { type: 'enum', values: CONTENT_STATUSES, required: true },
       sortOrder: { type: 'integer', min: 0 },
     },
-    search: ['name', 'role', 'bio'],
+    search: ['name', 'role'],
     filters: { status: { field: 'status', values: CONTENT_STATUSES } },
     orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
   },
@@ -461,6 +462,26 @@ export function createAdminCmsRouter() {
   };
   adminRouter.put('/company-profile', saveCompanyProfile);
   adminRouter.patch('/company-profile', saveCompanyProfile);
+
+  adminRouter.get('/about-page', async (request, response) => {
+    const record = await getPrisma(request).aboutPageContent.findUnique({
+      where: { id: 1 },
+      select: { content: true, updatedAt: true },
+    });
+    sendItem(response, { content: record?.content ?? DEFAULT_ABOUT_PAGE_CONTENT, updatedAt: record?.updatedAt ?? null });
+  });
+  const saveAboutPage = async (request, response) => {
+    const content = validateAboutPageContent(request.body?.content);
+    const item = await getPrisma(request).aboutPageContent.upsert({
+      where: { id: 1 },
+      create: { id: 1, content },
+      update: { content },
+      select: { content: true, updatedAt: true },
+    });
+    sendItem(response, item);
+  };
+  adminRouter.put('/about-page', saveAboutPage);
+  adminRouter.patch('/about-page', saveAboutPage);
 
   adminRouter.get('/company-profile/social-links', async (request, response) => {
     const page = parsePageValue(request.query.page, 1, 1_000_000);

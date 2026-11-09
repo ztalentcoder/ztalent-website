@@ -19,14 +19,17 @@ export default function TeamPage() {
             {members.map((member) => (
               <article className={`${styles.card} ${styles.centeredCard}`} key={`${member.name}-${member.role}`}>
                 <PublicImage
-                  className={styles.contentImage}
+                  className={styles.teamPhoto}
                   src={member.photoUrl}
                   alt={member.name}
-                  fallback={<div className={styles.avatar} aria-hidden="true">{member.name.split(/\s+/).map((part) => part[0]).join('').slice(0, 2).toUpperCase()}</div>}
                 />
                 <h3>{member.name}</h3>
                 <p>{member.role}</p>
-                {member.bio && <p>{member.bio}</p>}
+                {member.portfolioUrl && (
+                  <a className={styles.portfolioLink} href={member.portfolioUrl} target="_blank" rel="noreferrer">
+                    View Portfolio
+                  </a>
+                )}
               </article>
             ))}
           </CardGrid>

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import ImageUploadField from '../../components/admin/ImageUploadField.jsx';
+import AboutPageEditor from './AboutPageEditor.jsx';
 import {
   createAdminContent,
   deleteAdminContent,
@@ -50,6 +51,7 @@ export default function AdminContentPage({ resource: requestedResource }) {
   const isCompanyProfile = resource === 'company-profile';
 
   if (isCompanyProfile) return <CompanyProfileEditor />;
+  if (resource === 'about-page') return <AboutPageEditor />;
   if (!definition) {
     return (
       <section className={styles.page}>

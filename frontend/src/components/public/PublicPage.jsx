@@ -2,12 +2,13 @@ import Button from '../common/Button.jsx';
 import WaveDivider from './WaveDivider.jsx';
 import styles from './PublicPage.module.css';
 
-export function PageHero({ title, description }) {
+export function PageHero({ title, description, eyebrow, style }) {
   return (
-    <section className={styles.hero}>
+    <section className={styles.hero} style={style}>
       <div className={styles.container}>
+        {eyebrow && <p className={styles.heroEyebrow}>{eyebrow}</p>}
         <h1>{title}</h1>
-        <p>{description}</p>
+        {description && <p>{description}</p>}
       </div>
       <WaveDivider />
     </section>
