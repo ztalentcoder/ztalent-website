@@ -198,6 +198,7 @@ model TeamMember {
   bio       String?       @db.Text
   photoUrl  String?       @db.VarChar(2048)
   portfolioUrl String?    @db.VarChar(2048)
+  photoPosition Int?      @db.SmallInt
   status    ContentStatus
   sortOrder Int           @default(0)
   createdAt DateTime      @default(now()) @db.Timestamptz(3)

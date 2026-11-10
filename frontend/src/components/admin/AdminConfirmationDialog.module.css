@@ -1,0 +1,91 @@
+.dialog {
+  position: fixed;
+  inset: 0;
+  width: min(440px, calc(100vw - 32px));
+  max-width: none;
+  margin: auto;
+  border: 1px solid var(--line, #e2e8f0);
+  border-radius: 16px;
+  padding: 0;
+  background: var(--card, #ffffff);
+  color: var(--ink, #172d4d);
+  box-shadow: 0 24px 70px rgb(5 24 44 / 24%);
+}
+
+.dialog::backdrop {
+  background: rgb(5 23 40 / 56%);
+  backdrop-filter: blur(2px);
+}
+
+.content {
+  display: grid;
+  gap: 12px;
+  padding: 26px;
+}
+
+.content h2 {
+  color: var(--ink, #172d4d);
+  font-size: 1.15rem;
+  font-weight: 750;
+}
+
+.content p {
+  color: var(--muted, #64758b);
+  font-size: 0.9rem;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.actions button {
+  min-height: 40px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  padding: 8px 14px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.actions button:focus-visible {
+  outline: 3px solid #7cc0f5;
+  outline-offset: 2px;
+}
+
+.actions .cancel {
+  border-color: var(--line, #e2e8f0);
+  background: var(--soft, #f1f5fa);
+  color: var(--ink, #172d4d);
+}
+
+.confirm {
+  background: var(--admin-danger, #8d1c13);
+  color: #ffffff;
+}
+
+.confirm:hover:not(:disabled) {
+  background: var(--admin-danger-hover, #821b16);
+}
+
+.actions button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+@media (max-width: 480px) {
+  .content {
+    padding: 22px 18px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dialog {
+    scroll-behavior: auto;
+  }
+}

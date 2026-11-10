@@ -61,9 +61,9 @@ export default function ImageUploadField({
     <div className={styles.field}>
       <label className={styles.label} htmlFor={`image-upload-${field.name}`}>{field.label}</label>
       <div className={styles.uploader}>
-        <div className={styles.preview} aria-live="polite">
+        <div className={`${styles.preview}${field.previewAspectRatio ? ` ${styles.portraitPreview}` : ''}`} aria-live="polite">
           {showPreview
-            ? <img src={preview} alt={`${field.label} preview`} onError={() => setPreviewError(true)} />
+            ? <img src={preview} alt={`${field.label} preview`} style={field.previewObjectPosition ? { objectPosition: field.previewObjectPosition } : undefined} onError={() => setPreviewError(true)} />
             : <span>{previewError ? 'Image preview unavailable' : 'No image selected'}</span>}
         </div>
         <div className={styles.actions}>

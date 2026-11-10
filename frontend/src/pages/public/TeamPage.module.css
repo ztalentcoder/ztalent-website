@@ -1,0 +1,167 @@
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(225px, 1fr));
+  align-items: stretch;
+  gap: 22px;
+}
+
+.card {
+  display: flex;
+  min-width: 0;
+  min-height: 348px;
+  align-items: center;
+  flex-direction: column;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 26px 20px 22px;
+  background: var(--card);
+  box-shadow: 0 10px 26px rgb(8 34 61 / 7%);
+  text-align: center;
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+
+.card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 15px 32px rgb(8 34 61 / 11%);
+}
+
+.photoFrame {
+  position: relative;
+  flex: 0 0 auto;
+  width: 150px;
+  height: 150px;
+  overflow: hidden;
+  border: 3px solid var(--card);
+  border-radius: 50%;
+  margin: 0 auto 17px;
+  background: var(--soft);
+  box-shadow: 0 0 0 1px var(--line), 0 7px 16px rgb(8 34 61 / 12%);
+}
+
+.teamPhoto {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: center var(--team-photo-position, 35%);
+}
+
+.name {
+  max-width: 100%;
+  margin: 0 0 7px;
+  color: var(--ink);
+  font-size: 1.12rem;
+  font-weight: 700;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.role {
+  max-width: 100%;
+  min-height: 2.8em;
+  color: var(--muted);
+  font-size: 0.94rem;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.portfolioLink {
+  display: inline-flex;
+  min-height: 38px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--blue);
+  border-radius: 6px;
+  margin-top: auto;
+  padding: 7px 14px;
+  background: var(--blue);
+  color: #ffffff;
+  font-size: 0.88rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition: background-color 160ms ease, border-color 160ms ease;
+}
+
+.portfolioLink:hover {
+  border-color: var(--deep-blue);
+  background: var(--deep-blue);
+}
+
+.portfolioLink:focus-visible {
+  outline: 3px solid #7cc0f5;
+  outline-offset: 3px;
+}
+
+@media (max-width: 900px) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
+  }
+}
+
+@media (max-width: 480px) {
+  .grid {
+    gap: 12px;
+  }
+
+  .card {
+    min-height: 326px;
+    padding: 22px 10px 18px;
+  }
+
+  .photoFrame {
+    width: 120px;
+    height: 120px;
+    margin-bottom: 15px;
+  }
+
+  .name {
+    font-size: 1rem;
+  }
+
+  .role {
+    font-size: 0.85rem;
+  }
+
+  .portfolioLink {
+    padding-right: 10px;
+    padding-left: 10px;
+    font-size: 0.82rem;
+  }
+}
+
+@media (max-width: 350px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .card {
+    min-height: 340px;
+    padding: 24px 18px 20px;
+  }
+
+  .photoFrame {
+    width: 120px;
+    height: 120px;
+  }
+
+  .name {
+    font-size: 1.08rem;
+  }
+
+  .role {
+    font-size: 0.92rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card,
+  .portfolioLink {
+    transition: none;
+  }
+}

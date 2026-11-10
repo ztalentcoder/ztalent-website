@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { getPublicImageUrl } from '../../services/publicContentApi.js';
 
-export default function PublicImage({ src, alt, className, loading = 'lazy', fallback = null }) {
+export default function PublicImage({ src, alt, className, style, loading = 'lazy', fallback = null }) {
   const [failed, setFailed] = useState(false);
   const imageUrl = getPublicImageUrl(src);
 
@@ -11,6 +11,7 @@ export default function PublicImage({ src, alt, className, loading = 'lazy', fal
   return (
     <img
       className={className}
+      style={style}
       src={imageUrl}
       alt={alt}
       loading={loading}

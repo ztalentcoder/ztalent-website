@@ -311,9 +311,10 @@ test('all public content collections constrain database reads to public records'
       assert.equal(response.status, 200, path);
     }
   });
-  for (const name of ['businessArea', 'service', 'project', 'academicCourse', 'blogPost', 'teamMember', 'testimonial']) {
+  for (const name of ['businessArea', 'service', 'project', 'academicCourse', 'blogPost', 'testimonial']) {
     assert.equal(whereByModel[name].status, 'PUBLISHED', name);
   }
+  assert.deepEqual(whereByModel.teamMember, { status: 'PUBLISHED', photoUrl: { not: null } });
   assert.deepEqual(whereByModel.blogCategory, { posts: { some: { status: 'PUBLISHED' } } });
   assert.deepEqual(whereByModel.siteStatistic, {
     isActive: true,
@@ -468,6 +469,7 @@ test('public team members expose only the card fields and an optional portfolio 
           role: 'Lead Engineer',
           photoUrl: 'https://images.example.test/ada.webp',
           portfolioUrl: 'https://ada.example.test',
+          photoPosition: 18,
           bio: 'Private biography',
           linkedinUrl: 'https://linkedin.example/ada',
           githubUrl: 'https://github.example/ada',
@@ -476,6 +478,7 @@ test('public team members expose only the card fields and an optional portfolio 
           role: 'Designer',
           photoUrl: 'https://images.example.test/grace.webp',
           portfolioUrl: null,
+          photoPosition: null,
           bio: 'Another private biography',
         }];
       },
@@ -492,13 +495,15 @@ test('public team members expose only the card fields and an optional portfolio 
       role: 'Lead Engineer',
       photoUrl: 'https://images.example.test/ada.webp',
       portfolioUrl: 'https://ada.example.test',
+      photoPosition: 18,
     }, {
       name: 'Grace Example',
       role: 'Designer',
       photoUrl: 'https://images.example.test/grace.webp',
       portfolioUrl: null,
+      photoPosition: 35,
     }]);
   });
-  assert.deepEqual(query.select, { name: true, role: true, photoUrl: true, portfolioUrl: true });
-  assert.deepEqual(query.where, { status: 'PUBLISHED' });
+  assert.deepEqual(query.select, { name: true, role: true, photoUrl: true, portfolioUrl: true, photoPosition: true });
+  assert.deepEqual(query.where, { status: 'PUBLISHED', photoUrl: { not: null } });
 });

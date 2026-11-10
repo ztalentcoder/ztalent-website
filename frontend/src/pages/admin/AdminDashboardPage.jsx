@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAdminAuth } from '../../context/AdminAuthContext.jsx';
 import { getAdminDashboard } from '../../services/adminContentApi.js';
-import { adminNavigation } from './contentResources.js';
 import styles from './AdminDashboardPage.module.css';
 
 const overview = [
@@ -60,17 +59,6 @@ export default function AdminDashboardPage() {
             <strong>{loading ? '…' : counts?.[item.key] ?? 0}</strong>
           </Link>
         ))}
-      </section>
-      <section>
-        <h2>Quick links</h2>
-        <div className={styles.links}>
-          {adminNavigation.filter((item) => (
-            item.to !== '/admin/dashboard' &&
-            (item.to !== '/admin/manage/contact-messages' || admin?.role === 'SUPER_ADMIN')
-          )).map((item) => (
-            <Link key={item.to} to={item.to}>{item.label}</Link>
-          ))}
-        </div>
       </section>
     </main>
   );

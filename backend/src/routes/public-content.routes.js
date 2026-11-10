@@ -157,6 +157,7 @@ function serializeTeamMember(member) {
     role: member.role,
     photoUrl: member.photoUrl,
     portfolioUrl: member.portfolioUrl,
+    photoPosition: member.photoPosition ?? 35,
   };
 }
 
@@ -443,9 +444,9 @@ export function createPublicContentRouter() {
 
   createListRoute(router, 'team-members', {
     modelName: 'teamMember',
-    select: { name: true, role: true, photoUrl: true, portfolioUrl: true },
+    select: { name: true, role: true, photoUrl: true, portfolioUrl: true, photoPosition: true },
     serialize: serializeTeamMember,
-    where: () => ({ status: 'PUBLISHED' }),
+    where: () => ({ status: 'PUBLISHED', photoUrl: { not: null } }),
     orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
   });
 

@@ -371,41 +371,6 @@
   font-weight: 800;
 }
 
-.centeredCard {
-  text-align: center;
-}
-
-.teamPhoto {
-  display: block;
-  width: 100%;
-  height: auto;
-  max-height: none;
-  aspect-ratio: 4 / 5;
-  border-radius: 12px;
-  margin: 0 auto 18px;
-  object-fit: cover;
-}
-
-.portfolioLink {
-  display: inline-flex;
-  justify-content: center;
-  border: 1px solid var(--blue);
-  border-radius: 6px;
-  margin-top: 16px;
-  padding: 9px 16px;
-  background: var(--blue);
-  color: #ffffff;
-  font-size: 0.9rem;
-  font-weight: 700;
-  text-decoration: none;
-  transition: background-color 160ms ease, border-color 160ms ease;
-}
-
-.portfolioLink:hover {
-  border-color: var(--deep-blue);
-  background: var(--deep-blue);
-}
-
 .contactForm {
   display: grid;
   gap: 13px;

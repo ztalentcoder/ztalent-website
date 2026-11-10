@@ -648,6 +648,7 @@ test('team member CMS manages portfolio details without biography fields', async
         role: 'Lead Engineer',
         photoUrl: 'https://images.example.test/ada.webp',
         portfolioUrl: 'https://ada.example.test',
+        photoPosition: 45,
         status: 'PUBLISHED',
         sortOrder: 2,
       }),
@@ -667,12 +668,29 @@ test('team member CMS manages portfolio details without biography fields', async
     });
     assert.equal(rejectedBiography.status, 400);
     assert.equal((await rejectedBiography.json()).error.code, 'VALIDATION_ERROR');
+
+    const missingPhoto = await fetch(`${baseUrl}/api/admin/team-members`, {
+      method: 'POST',
+      headers: { ...adminHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'No Photo', role: 'Contributor', status: 'PUBLISHED' }),
+    });
+    assert.equal(missingPhoto.status, 400);
+    assert.equal((await missingPhoto.json()).error.code, 'VALIDATION_ERROR');
+
+    const invalidPosition = await fetch(`${baseUrl}/api/admin/team-members`, {
+      method: 'POST',
+      headers: { ...adminHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'Invalid Position', role: 'Contributor', photoPosition: 101, status: 'DRAFT' }),
+    });
+    assert.equal(invalidPosition.status, 400);
+    assert.equal((await invalidPosition.json()).error.code, 'VALIDATION_ERROR');
   });
   assert.deepEqual(created, {
     name: 'Ada Example',
     role: 'Lead Engineer',
     photoUrl: 'https://images.example.test/ada.webp',
     portfolioUrl: 'https://ada.example.test',
+    photoPosition: 45,
     status: 'PUBLISHED',
     sortOrder: 2,
   });

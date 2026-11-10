@@ -1,8 +1,9 @@
 import SectionHeading from '../../components/common/SectionHeading.jsx';
 import PublicImage from '../../components/public/PublicImage.jsx';
-import { CallToAction, CardGrid, ContentSection, PageHero, styles } from '../../components/public/PublicPage.jsx';
+import { CallToAction, ContentSection, PageHero } from '../../components/public/PublicPage.jsx';
 import { PageMetadata, PublicContentState } from '../../components/public/PublicContentState.jsx';
 import usePublicContent from '../../hooks/usePublicContent.js';
+import styles from './TeamPage.module.css';
 
 export default function TeamPage() {
   const team = usePublicContent('team-members', { pageSize: 50 });
@@ -15,16 +16,19 @@ export default function TeamPage() {
       <ContentSection>
         <SectionHeading title="Meet the team" />
         {members.length > 0 ? (
-          <CardGrid>
+          <div className={styles.grid}>
             {members.map((member) => (
-              <article className={`${styles.card} ${styles.centeredCard}`} key={`${member.name}-${member.role}`}>
-                <PublicImage
-                  className={styles.teamPhoto}
-                  src={member.photoUrl}
-                  alt={member.name}
-                />
-                <h3>{member.name}</h3>
-                <p>{member.role}</p>
+              <article className={styles.card} key={`${member.name}-${member.role}`}>
+                <div className={styles.photoFrame}>
+                  <PublicImage
+                    className={styles.teamPhoto}
+                    src={member.photoUrl}
+                    alt={member.name}
+                    style={{ '--team-photo-position': `${member.photoPosition ?? 35}%` }}
+                  />
+                </div>
+                <h2 className={styles.name}>{member.name}</h2>
+                <p className={styles.role}>{member.role}</p>
                 {member.portfolioUrl && (
                   <a className={styles.portfolioLink} href={member.portfolioUrl} target="_blank" rel="noreferrer">
                     View Portfolio
@@ -32,7 +36,7 @@ export default function TeamPage() {
                 )}
               </article>
             ))}
-          </CardGrid>
+          </div>
         ) : (
           <PublicContentState
             status={team.status}

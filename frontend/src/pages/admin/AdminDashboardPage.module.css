@@ -70,20 +70,11 @@
 }
 
 .card:focus-visible,
-.links a:focus-visible,
 .error button:focus-visible {
   outline: 3px solid #7cc0f5;
   outline-offset: 3px;
 }
 
-.links {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 14px;
-}
-
-.links a,
 .error button {
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -93,11 +84,6 @@
   font-size: 0.9rem;
   font-weight: 700;
   text-decoration: none;
-}
-
-.links a:hover {
-  border-color: #9abfe0;
-  background: var(--soft);
 }
 
 .error {

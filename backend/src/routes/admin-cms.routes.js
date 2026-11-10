@@ -136,12 +136,30 @@ const resourceConfigs = {
       role: { type: 'string', required: true, max: 120 },
       photoUrl: { type: 'url', max: 2048, nullable: true, managedImagePath: true },
       portfolioUrl: { type: 'url', max: 2048, nullable: true },
+      photoPosition: { type: 'integer', nullable: true, min: 0, max: 100 },
       status: { type: 'enum', values: CONTENT_STATUSES, required: true },
       sortOrder: { type: 'integer', min: 0 },
     },
     search: ['name', 'role'],
     filters: { status: { field: 'status', values: CONTENT_STATUSES } },
     orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
+    validateCreate: async (_request, data) => {
+      if (data.status === 'PUBLISHED' && !data.photoUrl) {
+        throw invalid('A profile photo is required before publishing a team member.');
+      }
+    },
+    validateUpdate: async (request, id, data) => {
+      const current = await getPrisma(request).teamMember.findUnique({
+        where: { id },
+        select: { status: true, photoUrl: true },
+      });
+      if (!current) throw new HttpError(404, 'RESOURCE_NOT_FOUND', 'The requested resource was not found.');
+      const nextStatus = data.status ?? current.status;
+      const nextPhoto = Object.hasOwn(data, 'photoUrl') ? data.photoUrl : current.photoUrl;
+      if (nextStatus === 'PUBLISHED' && !nextPhoto) {
+        throw invalid('A profile photo is required before publishing a team member.');
+      }
+    },
   },
   testimonials: {
     model: 'testimonial',
@@ -246,7 +264,11 @@ function parseField(value, spec) {
     return value;
   }
   if (spec.type === 'integer') {
-    if (!Number.isSafeInteger(value) || (spec.min !== undefined && value < spec.min)) {
+    if (
+      !Number.isSafeInteger(value)
+      || (spec.min !== undefined && value < spec.min)
+      || (spec.max !== undefined && value > spec.max)
+    ) {
       throw invalid('Integer fields contain an invalid value.');
     }
     return value;
@@ -369,6 +391,7 @@ function createResourceRoutes(router, path, config) {
       throw new HttpError(405, 'METHOD_NOT_ALLOWED', 'This resource cannot be created.');
     }
     const data = parseBody(request.body, config.fields, { creating: true });
+    if (config.validateCreate) await config.validateCreate(request, data);
     const item = await modelFor(request).create({ data });
     sendItem(response, item, 201);
   });

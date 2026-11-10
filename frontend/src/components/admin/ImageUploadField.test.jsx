@@ -107,9 +107,11 @@ describe('ImageUploadField', () => {
     expect(contentResources['blog-posts'].fields.find((field) => field.name === 'coverImageUrl').type).toBe('image');
     expect(contentResources['team-members'].fields.find((field) => field.name === 'photoUrl').type).toBe('image');
     expect(contentResources['team-members'].fields.map((field) => field.name)).toEqual([
-      'name', 'role', 'photoUrl', 'portfolioUrl', 'status', 'sortOrder',
+      'name', 'role', 'photoUrl', 'portfolioUrl', 'photoPosition', 'status', 'sortOrder',
     ]);
     expect(contentResources['team-members'].fields.find((field) => field.name === 'portfolioUrl').type).toBe('url');
+    expect(contentResources['team-members'].fields.find((field) => field.name === 'photoPosition').max).toBe(100);
+    expect(contentResources['team-members'].fields.find((field) => field.name === 'photoUrl').previewAspectRatio).toBe('4 / 5');
     expect(contentResources.services.fields.some((field) => field.type === 'image')).toBe(false);
     expect(contentResources['academic-courses'].fields.some((field) => field.type === 'image')).toBe(false);
     expect(contentResources.testimonials.fields.some((field) => field.type === 'image')).toBe(false);

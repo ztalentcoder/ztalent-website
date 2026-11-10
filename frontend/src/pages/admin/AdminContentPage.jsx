@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import ImageUploadField from '../../components/admin/ImageUploadField.jsx';
+import AdminConfirmationDialog from '../../components/admin/AdminConfirmationDialog.jsx';
 import AboutPageEditor from './AboutPageEditor.jsx';
 import {
   createAdminContent,
@@ -72,6 +73,8 @@ function ResourceManager({ resource, definition }) {
   const [filterName, setFilterName] = useState('');
   const [filterValue, setFilterValue] = useState('');
   const [selected, setSelected] = useState(null);
+  const [pendingDelete, setPendingDelete] = useState(null);
+  const [deleting, setDeleting] = useState(false);
   const [formMode, setFormMode] = useState(null);
   const [form, setForm] = useState({});
   const [loading, setLoading] = useState(true);
@@ -147,7 +150,7 @@ function ResourceManager({ resource, definition }) {
       setSelected(response.item);
       setForm(Object.fromEntries(definition.fields.map((field) => [
         field.name,
-        response.item[field.name] ?? (field.type === 'checkbox' ? false : ''),
+        response.item[field.name] ?? field.defaultValue ?? (field.type === 'checkbox' ? false : ''),
       ])));
       setImageFiles({});
       setImageProgress({});
@@ -190,6 +193,7 @@ function ResourceManager({ resource, definition }) {
 
       if (resource === 'contact-messages') {
         await updateContactMessageStatus(selected.id, body.status);
+        window.dispatchEvent(new Event('admin-contact-messages-updated'));
       } else if (formMode === 'create') {
         await createAdminContent(resource, body);
       } else {
@@ -220,11 +224,10 @@ function ResourceManager({ resource, definition }) {
     }
   }
 
-  async function removeItem(item) {
-    if (definition.readOnly || !window.confirm(`Delete this ${definition.singular.toLowerCase()}? This cannot be undone.`)) {
-      return;
-    }
-
+  async function confirmRemoveItem() {
+    if (!pendingDelete || deleting || definition.readOnly) return;
+    const item = pendingDelete;
+    setDeleting(true);
     setError('');
     setNotice('');
     try {
@@ -239,6 +242,9 @@ function ResourceManager({ resource, definition }) {
       await loadItems();
     } catch (requestError) {
       setError(getErrorMessage(requestError));
+    } finally {
+      setPendingDelete(null);
+      setDeleting(false);
     }
   }
 
@@ -285,7 +291,9 @@ function ResourceManager({ resource, definition }) {
             {definition.fields.filter((field) => !field.readOnly && !isAutomaticStatistic(field)).map((field) => (
               <FormField
                 key={field.name}
-                field={field}
+                field={resource === 'team-members' && field.name === 'photoUrl'
+                  ? { ...field, previewObjectPosition: `center ${form.photoPosition ?? 35}%` }
+                  : field}
                 value={form[field.name]}
                 options={field.relation
                   ? (relationOptions[field.relation.resource] ?? []).map((item) => ({
@@ -377,7 +385,7 @@ function ResourceManager({ resource, definition }) {
                       {definition.readOnly ? 'View / update' : 'Edit'}
                     </button>
                     {!definition.readOnly && definition.allowDelete !== false && (
-                      <button className={styles.dangerButton} type="button" onClick={() => void removeItem(item)}>
+                      <button className={styles.dangerButton} type="button" onClick={() => setPendingDelete(item)}>
                         Delete
                       </button>
                     )}
@@ -421,6 +429,14 @@ function ResourceManager({ resource, definition }) {
           <button type="button" disabled={page >= pagination.pageCount} onClick={() => setPage((current) => current + 1)}>Next</button>
         </nav>
       )}
+      <AdminConfirmationDialog
+        open={Boolean(pendingDelete)}
+        title={`Delete ${definition.singular.toLowerCase()}?`}
+        message={`Delete this ${definition.singular.toLowerCase()}? This action cannot be undone.`}
+        busy={deleting}
+        onConfirm={() => void confirmRemoveItem()}
+        onCancel={() => setPendingDelete(null)}
+      />
     </section>
   );
 }
@@ -471,6 +487,7 @@ function FormField({ field, value, onChange, options, file, onFileChange, upload
           type={field.type ?? 'text'}
           required={field.required}
           min={field.min}
+          max={field.max}
           maxLength={field.maxLength}
           value={value ?? ''}
           onChange={(event) => onChange(event.target.value)}
@@ -484,6 +501,8 @@ function CompanyProfileEditor() {
   const [profile, setProfile] = useState(null);
   const [socialLinks, setSocialLinks] = useState([]);
   const [socialForm, setSocialForm] = useState(null);
+  const [pendingSocialDelete, setPendingSocialDelete] = useState(null);
+  const [deletingSocialLink, setDeletingSocialLink] = useState(false);
   const [socialSaving, setSocialSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -582,8 +601,10 @@ function CompanyProfileEditor() {
     }
   }
 
-  async function removeSocialLink(item) {
-    if (!window.confirm(`Delete the ${item.platform} social link?`)) return;
+  async function removeSocialLink() {
+    if (!pendingSocialDelete || deletingSocialLink) return;
+    const item = pendingSocialDelete;
+    setDeletingSocialLink(true);
     setError('');
     setNotice('');
     try {
@@ -592,6 +613,9 @@ function CompanyProfileEditor() {
       setNotice('Social link deleted.');
     } catch (requestError) {
       setError(getErrorMessage(requestError));
+    } finally {
+      setPendingSocialDelete(null);
+      setDeletingSocialLink(false);
     }
   }
 
@@ -663,7 +687,7 @@ function CompanyProfileEditor() {
                   <span><strong>{item.platform}</strong> — {item.url} {!item.isActive && '(inactive)'}</span>
                   <span className={styles.actions}>
                     <button className={styles.textButton} type="button" onClick={() => setSocialForm(item)}>Edit</button>
-                    <button className={styles.dangerButton} type="button" onClick={() => void removeSocialLink(item)}>Delete</button>
+                    <button className={styles.dangerButton} type="button" onClick={() => setPendingSocialDelete(item)}>Delete</button>
                   </span>
                 </li>
               ))}
@@ -720,6 +744,14 @@ function CompanyProfileEditor() {
           </form>
         )}
       </section>
+      <AdminConfirmationDialog
+        open={Boolean(pendingSocialDelete)}
+        title="Delete social link?"
+        message={`Delete the ${pendingSocialDelete?.platform ?? ''} social link? This action cannot be undone.`}
+        busy={deletingSocialLink}
+        onConfirm={() => void removeSocialLink()}
+        onCancel={() => setPendingSocialDelete(null)}
+      />
     </section>
   );
 }
