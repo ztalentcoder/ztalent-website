@@ -84,12 +84,26 @@ Admin CMS routes require a valid admin session. Content routes permit
 `SUPER_ADMIN` and `EDITOR`; contact-message list, detail, and status routes are
 restricted to `SUPER_ADMIN`.
 
+The Tech Solutions catalogue reuses `business-areas` as service categories and
+the existing `services` resource for service records. Service slugs are
+generated uniquely within their category. Services support a validated icon
+identifier and an ordered feature list; category deletion is blocked while
+services reference that category.
+The Tech Solutions admin view scopes these existing endpoints to categories
+marked for Tech Solutions and their services. Categories linked to portfolio
+projects are excluded from that dedicated view to avoid changing shared content.
+
 - `GET /api/admin/dashboard`
 - `GET`, `PUT`, `PATCH /api/admin/company-profile`
 - `GET`, `POST /api/admin/company-profile/social-links`
 - `GET`, `PUT`, `PATCH`, `DELETE /api/admin/company-profile/social-links/:id`
 - `GET`, `POST /api/admin/{business-areas,services,projects,academic-courses,blog-categories,blog-posts,team-members,testimonials,site-statistics}`
 - `GET`, `PUT`, `PATCH`, `DELETE /api/admin/{resource}/:id` for each resource above
+- `GET`, `POST /api/admin/course-categories` and
+  `GET`, `PUT`, `PATCH`, `DELETE /api/admin/course-categories/:id`
+- `GET`, `POST /api/admin/academic-courses/:courseId/episodes`
+- `PUT`, `PATCH`, `DELETE /api/admin/academic-courses/:courseId/episodes/:episodeId`
+- `PATCH /api/admin/academic-courses/:courseId/episodes/reorder`
 - `GET /api/admin/contact-messages` (supports `page`, `pageSize`, `search`,
   `status`, and `topic`)
 - `GET /api/admin/contact-messages/:id`
@@ -113,10 +127,13 @@ and active social links are provided for the public website.
   descriptions, with published project/course counts and saved institution/
   student values; not cached)
 - `GET /api/public/business-areas` and `/api/public/business-areas/:slug`
-- `GET /api/public/services` (optional `businessArea` slug filter)
+- `GET /api/public/services` (published services and categories only; optional
+  `businessArea` slug filter; includes a safe icon identifier and key features)
 - `GET /api/public/projects` (optional `businessArea` slug filter) and
   `/api/public/projects/:slug`
-- `GET /api/public/academic-courses` (optional `level` filter) and
+- `GET /api/public/course-categories` (published categories only)
+- `GET /api/public/academic-courses` (optional `search`, `category`, `level`,
+  and `sort` filters) and
   `/api/public/academic-courses/:slug`
 - `GET /api/public/blog-categories` (only categories with published posts)
 - `GET /api/public/blog-posts` (optional `category` slug filter) and
@@ -132,3 +149,19 @@ Content collections accept `page` and `pageSize` (maximum 50) and return the sta
 and course totals are counted from published records; institution and student
 values come from their saved SiteStatistic entries.
 Contact messages and administrative models are not exposed.
+
+Course category and episode data is introduced by the additive
+`20261110110000_academic_course_catalogue` Prisma migration. Apply pending
+migrations with the deployment's normal `prisma migrate deploy` process before
+deploying the updated backend. Existing courses are retained with an unset
+category because their intended category cannot be inferred safely; assign a
+category in the Academic Courses manager before publishing them through the
+public catalogue. The previous manual episode count is retained as ignored
+legacy data; public totals use only published episode records.
+
+The public course catalogue accepts `search` (course title), `category` (slug),
+`level`, and `sort` (`displayOrder`, `titleAsc`, `titleDesc`, or `newest`) along
+with pagination. Only published courses in published categories and published
+episodes are returned. Episode totals are computed from those published
+episodes. The admin course manager requires a category for new courses and
+prevents deleting categories that still have assigned courses.

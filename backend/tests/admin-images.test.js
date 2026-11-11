@@ -15,6 +15,8 @@ const resourceFolders = {
   projects: 'projects',
   'blog-posts': 'blog',
   'team-members': 'team',
+  'academic-courses': 'courses',
+  'course-categories': 'course-categories',
 };
 
 async function createImage(format) {
@@ -56,6 +58,8 @@ async function createFixture(t, { role = 'EDITOR' } = {}) {
     project: { findFirst: async ({ where }) => references.has(where.imageUrl) ? { id: 'record' } : null },
     blogPost: { findFirst: async ({ where }) => references.has(where.coverImageUrl) ? { id: 'record' } : null },
     teamMember: { findFirst: async ({ where }) => references.has(where.photoUrl) ? { id: 'record' } : null },
+    academicCourse: { findFirst: async ({ where }) => references.has(where.imageUrl) ? { id: 'record' } : null },
+    courseCategory: { findFirst: async ({ where }) => references.has(where.imageUrl) ? { id: 'record' } : null },
   };
   const app = createApp({
     prismaClient,

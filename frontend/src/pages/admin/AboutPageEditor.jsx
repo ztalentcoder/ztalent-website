@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { getAboutPageContent, updateAboutPageContent } from '../../services/adminContentApi.js';
+import useAutoDismissNotice from '../../hooks/useAutoDismissNotice.js';
 import styles from './AdminContentPage.module.css';
 import editorStyles from './AboutPageEditor.module.css';
 
@@ -114,7 +115,7 @@ export default function AboutPageEditor() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
-  const [notice, setNotice] = useState('');
+  const [notice, setNotice] = useAutoDismissNotice();
 
   useEffect(() => {
     let active = true;

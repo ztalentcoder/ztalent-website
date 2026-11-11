@@ -18,6 +18,20 @@ test('local storage creates resource folders and safe unique public names', asyn
   assert.equal(first.bytes, 10);
   assert.equal(storage.getPublicDirectory(), path.resolve(directory));
   assert.equal((await stat(path.join(directory, 'business-areas', path.basename(first.url)))).isFile(), true);
+
+  const courseImage = await storage.uploadImage({
+    buffer: Buffer.from('safe-image'),
+    resource: 'academic-courses',
+    format: 'webp',
+  });
+  assert.match(courseImage.url, /^\/uploads\/images\/courses\/[0-9a-f-]{36}\.webp$/);
+  assert.equal((await stat(path.join(directory, 'courses', path.basename(courseImage.url)))).isFile(), true);
+  const categoryImage = await storage.uploadImage({
+    buffer: Buffer.from('safe-image'),
+    resource: 'course-categories',
+    format: 'png',
+  });
+  assert.match(categoryImage.url, /^\/uploads\/images\/course-categories\/[0-9a-f-]{36}\.png$/);
 });
 
 test('local image URLs are managed only for exact supported generated paths', async (t) => {
@@ -27,6 +41,8 @@ test('local image URLs are managed only for exact supported generated paths', as
   const managedUrl = '/uploads/images/blog/123e4567-e89b-42d3-a456-426614174000.webp';
 
   assert.equal(storage.isManagedUrl(managedUrl), true);
+  assert.equal(storage.isManagedUrl('/uploads/images/courses/123e4567-e89b-42d3-a456-426614174000.webp'), true);
+  assert.equal(storage.isManagedUrl('/uploads/images/course-categories/123e4567-e89b-42d3-a456-426614174000.webp'), true);
   for (const url of [
     'https://legacy.example.test/image.jpg',
     '/uploads/images/../outside.png',

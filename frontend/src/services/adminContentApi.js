@@ -47,20 +47,20 @@ export function listAdminContent(resource, query = {}) {
   return request(resource, { query });
 }
 
-export function getAdminContent(resource, id) {
-  return request(`${resource}/${encodeURIComponent(id)}`);
+export function getAdminContent(resource, id, query) {
+  return request(`${resource}/${encodeURIComponent(id)}`, { query });
 }
 
-export function createAdminContent(resource, body) {
-  return request(resource, { method: 'POST', body });
+export function createAdminContent(resource, body, query) {
+  return request(resource, { method: 'POST', body, query });
 }
 
-export function updateAdminContent(resource, id, body) {
-  return request(`${resource}/${encodeURIComponent(id)}`, { method: 'PUT', body });
+export function updateAdminContent(resource, id, body, query) {
+  return request(`${resource}/${encodeURIComponent(id)}`, { method: 'PUT', body, query });
 }
 
-export function deleteAdminContent(resource, id) {
-  return request(`${resource}/${encodeURIComponent(id)}`, { method: 'DELETE' });
+export function deleteAdminContent(resource, id, query) {
+  return request(`${resource}/${encodeURIComponent(id)}`, { method: 'DELETE', query });
 }
 
 export function getCompanyProfile() {
@@ -121,5 +121,38 @@ export function updateContactMessageStatus(id, status) {
   return request(`contact-messages/${encodeURIComponent(id)}`, {
     method: 'PATCH',
     body: { status },
+  });
+}
+
+export function listCourseEpisodes(courseId) {
+  return request(`academic-courses/${encodeURIComponent(courseId)}/episodes`, {
+    query: { page: 1, pageSize: 100 },
+  });
+}
+
+export function createCourseEpisode(courseId, body) {
+  return request(`academic-courses/${encodeURIComponent(courseId)}/episodes`, {
+    method: 'POST',
+    body,
+  });
+}
+
+export function updateCourseEpisode(courseId, episodeId, body) {
+  return request(`academic-courses/${encodeURIComponent(courseId)}/episodes/${encodeURIComponent(episodeId)}`, {
+    method: 'PUT',
+    body,
+  });
+}
+
+export function reorderCourseEpisodes(courseId, episodeIds) {
+  return request(`academic-courses/${encodeURIComponent(courseId)}/episodes/reorder`, {
+    method: 'PATCH',
+    body: { episodeIds },
+  });
+}
+
+export function deleteCourseEpisode(courseId, episodeId) {
+  return request(`academic-courses/${encodeURIComponent(courseId)}/episodes/${encodeURIComponent(episodeId)}`, {
+    method: 'DELETE',
   });
 }

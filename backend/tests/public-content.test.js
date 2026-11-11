@@ -12,6 +12,7 @@ function createPublicPrisma(overrides = {}) {
     'service',
     'project',
     'academicCourse',
+    'courseCategory',
     'blogCategory',
     'blogPost',
     'teamMember',
@@ -129,7 +130,10 @@ test('public statistics return active editable content and accurate published pr
   });
 
   assert.deepEqual(queries.project, { status: 'PUBLISHED' });
-  assert.deepEqual(queries.academicCourse, { status: 'PUBLISHED' });
+  assert.deepEqual(queries.academicCourse, {
+    status: 'PUBLISHED',
+    category: { status: 'PUBLISHED' },
+  });
   assert.deepEqual(queries.siteStatistic.where, {
     isActive: true,
     key: { in: ['projects-delivered', 'academic-courses', 'institutions-served', 'students-reached'] },
@@ -236,7 +240,11 @@ test('published-only resources enforce status filters and filter validation', as
     const invalidSlugFilter = await fetch(`${baseUrl}/api/public/projects?businessArea=invalid%20slug`);
     assert.equal(invalidSlugFilter.status, 400);
   });
-  assert.deepEqual(seen[0].where, { status: 'PUBLISHED', level: 'ADVANCED' });
+  assert.deepEqual(seen[0].where, {
+    status: 'PUBLISHED',
+    category: { status: 'PUBLISHED' },
+    level: 'ADVANCED',
+  });
   assert.equal(seen[0].take, 3);
 });
 
@@ -280,9 +288,58 @@ test('public business areas expose only their approved image URL field', async (
   });
 });
 
+test('public services expose only published category services with safe icon data', async () => {
+  let optionsSeen;
+  const app = publicApp(createPublicPrisma({
+    service: {
+      findMany: async (options) => {
+        optionsSeen = options;
+        return [{
+          id: 'private-id',
+          slug: 'custom-software',
+          title: 'Custom Software Development',
+          summary: 'Software for your organization.',
+          description: 'Plan and build software.',
+          icon: '<script>',
+          keyFeatures: ['Accessible', 'Maintainable'],
+          status: 'PUBLISHED',
+          businessArea: { slug: 'software-development', name: 'Software Development', status: 'PUBLISHED' },
+        }];
+      },
+      count: async () => 1,
+    },
+  }));
+  await withServer(app, async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/api/public/services`);
+    assert.equal(response.status, 200);
+    assert.deepEqual((await response.json()).items, [{
+      slug: 'custom-software',
+      title: 'Custom Software Development',
+      summary: 'Software for your organization.',
+      description: 'Plan and build software.',
+      icon: 'code',
+      keyFeatures: ['Accessible', 'Maintainable'],
+      businessArea: { slug: 'software-development', name: 'Software Development' },
+    }]);
+  });
+  assert.deepEqual(optionsSeen.where, {
+    status: 'PUBLISHED',
+    businessArea: { status: 'PUBLISHED' },
+  });
+  assert.deepEqual(optionsSeen.select, {
+    slug: true,
+    title: true,
+    summary: true,
+    description: true,
+    icon: true,
+    keyFeatures: true,
+    businessArea: { select: { slug: true, name: true, status: true } },
+  });
+});
+
 test('all public content collections constrain database reads to public records', async () => {
   const whereByModel = {};
-  const names = ['businessArea', 'service', 'project', 'academicCourse', 'blogCategory', 'blogPost', 'teamMember', 'testimonial', 'siteStatistic'];
+  const names = ['businessArea', 'service', 'project', 'academicCourse', 'courseCategory', 'blogCategory', 'blogPost', 'teamMember', 'testimonial', 'siteStatistic'];
   const overrides = {};
   for (const name of names) {
     overrides[name] = {
@@ -299,6 +356,7 @@ test('all public content collections constrain database reads to public records'
     'services',
     'projects',
     'academic-courses',
+    'course-categories',
     'blog-categories',
     'blog-posts',
     'team-members',
@@ -316,6 +374,7 @@ test('all public content collections constrain database reads to public records'
   }
   assert.deepEqual(whereByModel.teamMember, { status: 'PUBLISHED', photoUrl: { not: null } });
   assert.deepEqual(whereByModel.blogCategory, { posts: { some: { status: 'PUBLISHED' } } });
+  assert.deepEqual(whereByModel.courseCategory, { status: 'PUBLISHED' });
   assert.deepEqual(whereByModel.siteStatistic, {
     isActive: true,
     key: { in: ['projects-delivered', 'academic-courses', 'institutions-served', 'students-reached'] },
@@ -351,7 +410,10 @@ test('published project, blog, course, and business-area detail routes use slug 
     }
   });
   for (const model of ['project', 'blogPost', 'academicCourse', 'businessArea']) {
-    assert.deepEqual(seen[model].where, { slug: seen[model].where.slug, status: 'PUBLISHED' });
+    const expectedWhere = model === 'academicCourse'
+      ? { slug: seen[model].where.slug, status: 'PUBLISHED', category: { status: 'PUBLISHED' } }
+      : { slug: seen[model].where.slug, status: 'PUBLISHED' };
+    assert.deepEqual(seen[model].where, expectedWhere);
     assert.equal(seen[model].select.passwordHash, undefined);
     assert.equal(seen[model].select.tokenHash, undefined);
   }

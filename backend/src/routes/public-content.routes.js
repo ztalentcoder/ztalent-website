@@ -5,6 +5,7 @@ import { DEFAULT_ABOUT_PAGE_CONTENT, serializePublicAboutPage } from '../service
 const MAX_PAGE = 1_000_000;
 const MAX_PAGE_SIZE = 50;
 const DEFAULT_PAGE_SIZE = 12;
+const SERVICE_ICONS = new Set(['code', 'smartphone', 'layers', 'palette', 'database', 'plug', 'brain', 'workflow', 'settings', 'life-buoy']);
 
 function badRequest(message = 'Request contains invalid query parameters.') {
   return new HttpError(400, 'VALIDATION_ERROR', message);
@@ -31,6 +32,13 @@ function parseOptionalFilter(query, name, values) {
     throw badRequest(`The ${name} filter is invalid.`);
   }
   return value;
+}
+
+function parseOptionalSearch(query, name, maximum = 100) {
+  const value = query[name];
+  if (value === undefined) return '';
+  if (typeof value !== 'string' || value.length > maximum) throw badRequest(`The ${name} value is invalid.`);
+  return value.trim();
 }
 
 function parseSlug(value) {
@@ -106,6 +114,8 @@ function serializeService(service) {
     title: service.title,
     summary: service.summary,
     description: service.description,
+    icon: SERVICE_ICONS.has(service.icon) ? service.icon : 'code',
+    keyFeatures: Array.isArray(service.keyFeatures) ? service.keyFeatures : [],
     businessArea: service.businessArea?.status === 'PUBLISHED'
       ? { slug: service.businessArea.slug, name: service.businessArea.name }
       : null,
@@ -126,16 +136,39 @@ function serializeProject(project) {
   };
 }
 
-function serializeCourse(course) {
+function serializeCourse(course, { includeEpisodes = false } = {}) {
   return {
     slug: course.slug,
     title: course.title,
     summary: course.summary,
+    description: course.description,
+    imageUrl: course.imageUrl,
     level: course.level,
     language: course.language,
-    episodeCount: course.episodeCount,
+    learningOutcomes: course.learningOutcomes,
+    requirements: course.requirements,
     externalUrl: course.externalUrl,
+    category: course.category ? {
+      slug: course.category.slug,
+      name: course.category.name,
+    } : null,
+    episodeCount: course.episodes?.length ?? 0,
+    ...(includeEpisodes ? { episodes: course.episodes?.map((episode, index) => ({
+      number: index + 1,
+      title: episode.title,
+      summary: episode.summary,
+      youtubeUrl: episode.youtubeUrl,
+    })) ?? [] } : {}),
     publishedAt: course.publishedAt,
+  };
+}
+
+function serializeCourseCategory(category) {
+  return {
+    slug: category.slug,
+    name: category.name,
+    description: category.description,
+    imageUrl: category.imageUrl,
   };
 }
 
@@ -193,7 +226,9 @@ async function getPublicStatistics(prisma) {
       orderBy: [{ sortOrder: 'asc' }, { label: 'asc' }],
     }),
     prisma.project.count({ where: { status: 'PUBLISHED' } }),
-    prisma.academicCourse.count({ where: { status: 'PUBLISHED' } }),
+    prisma.academicCourse.count({
+      where: { status: 'PUBLISHED', category: { status: 'PUBLISHED' } },
+    }),
   ]);
   const counts = { 'projects-delivered': projects, 'academic-courses': academicCourses };
 
@@ -319,6 +354,8 @@ export function createPublicContentRouter() {
       title: true,
       summary: true,
       description: true,
+      icon: true,
+      keyFeatures: true,
       businessArea: { select: { slug: true, name: true, status: true } },
     },
     serialize: serializeService,
@@ -364,42 +401,110 @@ export function createPublicContentRouter() {
     where: () => ({ status: 'PUBLISHED' }),
   });
 
-  createListRoute(router, 'academic-courses', {
-    modelName: 'academicCourse',
-    select: {
-      slug: true,
-      title: true,
-      summary: true,
-      level: true,
-      language: true,
-      episodeCount: true,
-      externalUrl: true,
-      publishedAt: true,
-    },
-    serialize: serializeCourse,
-    where: () => ({ status: 'PUBLISHED' }),
-    orderBy: [{ sortOrder: 'asc' }, { title: 'asc' }],
-    allowedFilters: ['level'],
-    filterWhere: (query) => {
-      const level = parseOptionalFilter(query, 'level', ['BEGINNER', 'INTERMEDIATE', 'ADVANCED']);
-      return level ? { level } : {};
-    },
-  });
-  createDetailRoute(router, 'academic-courses', {
-    modelName: 'academicCourse',
-    select: {
-      slug: true,
-      title: true,
-      summary: true,
-      level: true,
-      language: true,
-      episodeCount: true,
-      externalUrl: true,
-      publishedAt: true,
-    },
-    serialize: serializeCourse,
-    where: () => ({ status: 'PUBLISHED' }),
-  });
+  router.get('/course-categories', safely(async (request, response) => {
+    const unknown = Object.keys(request.query).filter((key) => !['page', 'pageSize'].includes(key));
+    if (unknown.length) throw badRequest();
+    const { page, pageSize } = parsePage(request.query);
+    const where = { status: 'PUBLISHED' };
+    const prisma = request.app.locals.prisma;
+    const [records, total] = await Promise.all([
+      prisma.courseCategory.findMany({
+        where,
+        select: { slug: true, name: true, description: true, imageUrl: true },
+        orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+      prisma.courseCategory.count({ where }),
+    ]);
+    collectionResponse(response, records.map(serializeCourseCategory), page, pageSize, total);
+  }));
+
+  router.get('/academic-courses', safely(async (request, response) => {
+    const unknown = Object.keys(request.query).filter((key) => (
+      !['page', 'pageSize', 'search', 'category', 'level', 'sort'].includes(key)
+    ));
+    if (unknown.length) throw badRequest();
+    const { page, pageSize } = parsePage(request.query);
+    const search = parseOptionalSearch(request.query, 'search');
+    const category = request.query.category ? parseFilterSlug(request.query.category) : undefined;
+    const level = parseOptionalFilter(request.query, 'level', ['BEGINNER', 'INTERMEDIATE', 'ADVANCED']);
+    const sort = parseOptionalFilter(request.query, 'sort', ['displayOrder', 'titleAsc', 'titleDesc', 'newest']) || 'displayOrder';
+    const where = {
+      status: 'PUBLISHED',
+      category: { status: 'PUBLISHED', ...(category ? { slug: category } : {}) },
+      ...(level ? { level } : {}),
+      ...(search ? { title: { contains: search, mode: 'insensitive' } } : {}),
+    };
+    const orderBy = {
+      displayOrder: [{ sortOrder: 'asc' }, { title: 'asc' }],
+      titleAsc: [{ title: 'asc' }],
+      titleDesc: [{ title: 'desc' }],
+      newest: [{ publishedAt: 'desc' }, { title: 'asc' }],
+    }[sort];
+    const prisma = request.app.locals.prisma;
+    const [records, total] = await Promise.all([
+      prisma.academicCourse.findMany({
+        where,
+        select: {
+          slug: true,
+          title: true,
+          summary: true,
+          description: true,
+          imageUrl: true,
+          level: true,
+          language: true,
+          learningOutcomes: true,
+          requirements: true,
+          externalUrl: true,
+          publishedAt: true,
+          category: { select: { slug: true, name: true } },
+          episodes: {
+            where: { status: 'PUBLISHED' },
+            select: { id: true },
+            orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }, { id: 'asc' }],
+          },
+        },
+        orderBy,
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+      prisma.academicCourse.count({ where }),
+    ]);
+    collectionResponse(response, records.map(serializeCourse), page, pageSize, total);
+  }));
+
+  router.get('/academic-courses/:slug', safely(async (request, response) => {
+    const slug = parseSlug(request.params.slug);
+    const item = await request.app.locals.prisma.academicCourse.findFirst({
+      where: {
+        slug,
+        status: 'PUBLISHED',
+        category: { status: 'PUBLISHED' },
+      },
+      select: {
+        slug: true,
+        title: true,
+        summary: true,
+        description: true,
+        imageUrl: true,
+        level: true,
+        language: true,
+        learningOutcomes: true,
+        requirements: true,
+        externalUrl: true,
+        publishedAt: true,
+        category: { select: { slug: true, name: true } },
+        episodes: {
+          where: { status: 'PUBLISHED' },
+          select: { title: true, summary: true, youtubeUrl: true },
+          orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }, { id: 'asc' }],
+        },
+      },
+    });
+    if (!item) throw publicNotFound();
+    response.json({ status: 'success', item: serializeCourse(item, { includeEpisodes: true }) });
+  }));
 
   createListRoute(router, 'blog-categories', {
     modelName: 'blogCategory',

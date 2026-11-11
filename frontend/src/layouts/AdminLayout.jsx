@@ -12,6 +12,8 @@ const iconPaths = {
   chart: <><path d="M4 19V5m0 14h17" /><path d="m7 15 4-4 3 2 5-6" /></>,
   services: <><path d="m12 3 9 5-9 5-9-5 9-5Z" /><path d="m3 12 9 5 9-5M3 16l9 5 9-5" /></>,
   course: <><path d="m2 9 10-5 10 5-10 5L2 9Z" /><path d="M6 11v5c3 2.5 9 2.5 12 0v-5m4-2v6" /></>,
+  tech: <><rect x="3" y="4" width="18" height="13" rx="2" /><path d="M8 21h8m-4-4v4m-5-9 3-3 2 2 3-4" /></>,
+  brain: <><path d="M12 18V5a3 3 0 0 0-5.8-1 4 4 0 0 0-2.1 7.3A4 4 0 0 0 7 18h5Zm0 0V5a3 3 0 0 1 5.8-1 4 4 0 0 1 2.1 7.3A4 4 0 0 1 17 18h-5ZM8 21h8" /></>,
   portfolio: <><rect x="3" y="7" width="18" height="14" rx="2" /><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m-13 5h18m-11 0v2h4v-2" /></>,
   quote: <><path d="M10 11H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v8a4 4 0 0 1-4 4m14-7h-5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v8a4 4 0 0 1-4 4" /></>,
   news: <><path d="M4 4h14a2 2 0 0 1 2 2v14H6a2 2 0 0 1-2-2V4Z" /><path d="M8 8h8m-8 4h8m-8 4h5M4 18a2 2 0 0 1-2-2V6" /></>,

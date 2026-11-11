@@ -24,6 +24,7 @@ function renderLayout({ path = '/admin/dashboard', role = 'SUPER_ADMIN' } = {}) 
         <Route path="/admin" element={<AdminLayout />}>
           <Route path="dashboard" element={<p>Dashboard content</p>} />
           <Route path="company-profile" element={<p>Company content</p>} />
+          <Route path="tech-solutions" element={<p>Tech Solutions content</p>} />
           <Route path="manage/:resource" element={<p>Managed content</p>} />
           <Route path="login" element={<p>Login page</p>} />
         </Route>
@@ -52,7 +53,9 @@ describe('AdminLayout navigation', () => {
     const websiteGroup = screen.getByRole('button', { name: 'Website Content' });
     expect(servicesGroup).toHaveAttribute('aria-expanded', 'true');
     expect(websiteGroup).toHaveAttribute('aria-expanded', 'false');
-    expect(screen.getByRole('link', { name: 'Services' })).toHaveAttribute('href', '/admin/manage/services');
+    expect(screen.getByRole('link', { name: 'Data & AI' })).toHaveAttribute('href', '/admin/manage/services');
+    expect(screen.getByRole('link', { name: 'Academic' })).toHaveAttribute('href', '/admin/manage/academic-courses');
+    expect(screen.getByRole('link', { name: 'Tech Solutions' })).toHaveAttribute('href', '/admin/tech-solutions');
 
     await user.click(websiteGroup);
     expect(websiteGroup).toHaveAttribute('aria-expanded', 'true');
@@ -71,9 +74,9 @@ describe('AdminLayout navigation', () => {
       '/admin/company-profile',
       '/admin/manage/about-page',
       '/admin/manage/site-statistics',
-      '/admin/manage/business-areas',
-      '/admin/manage/services',
       '/admin/manage/academic-courses',
+      '/admin/tech-solutions',
+      '/admin/manage/services',
       '/admin/manage/projects',
       '/admin/manage/testimonials',
       '/admin/manage/blog-posts',
@@ -82,6 +85,21 @@ describe('AdminLayout navigation', () => {
       '/admin/manage/contact-messages',
     ]);
     expect(new Set(routes).size).toBe(routes.length);
+  });
+
+  it('activates the dedicated Tech Solutions destination and closes mobile navigation after selecting it', async () => {
+    const user = userEvent.setup();
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 375 });
+    renderLayout({ path: '/admin/tech-solutions' });
+    const link = screen.getByRole('link', { name: 'Tech Solutions' });
+    expect(link).toHaveAttribute('href', '/admin/tech-solutions');
+    expect(link.className).toContain('activeSubmenuLink');
+    expect(screen.getByRole('button', { name: 'Services' })).toHaveAttribute('aria-expanded', 'true');
+
+    await user.click(screen.getByRole('button', { name: 'Open admin navigation' }));
+    await user.click(link);
+    expect(await screen.findByText('Tech Solutions content')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Open admin navigation' })).toHaveAttribute('aria-expanded', 'false');
   });
 
   it('shows unread counts only for super admins and hides a zero count', async () => {

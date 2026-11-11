@@ -8,6 +8,7 @@ const CONTENT_ROLES = ['SUPER_ADMIN', 'EDITOR'];
 const CONTENT_STATUSES = ['DRAFT', 'PUBLISHED', 'ARCHIVED'];
 const MESSAGE_STATUSES = ['NEW', 'READ', 'REPLIED', 'ARCHIVED'];
 const COURSE_LEVELS = ['BEGINNER', 'INTERMEDIATE', 'ADVANCED'];
+const SERVICE_ICONS = ['code', 'smartphone', 'layers', 'palette', 'database', 'plug', 'brain', 'workflow', 'settings', 'life-buoy'];
 const CONTACT_TOPICS = [
   'GENERAL_QUESTION',
   'REQUEST_SYSTEM',
@@ -28,25 +29,91 @@ const resourceConfigs = {
     model: 'businessArea',
     fields: {
       name: { type: 'string', required: true, max: 120 },
-      slug: { type: 'slug', required: true, max: 150 },
+      slug: { type: 'slug', max: 150 },
       summary: { type: 'string', max: 300, nullable: true },
-      description: { type: 'string', required: true },
+      description: { type: 'string', nullable: true },
       imageUrl: { type: 'url', max: 2048, nullable: true, managedImagePath: true },
+      isTechSolution: { type: 'boolean' },
       status: { type: 'enum', values: CONTENT_STATUSES, required: true },
       sortOrder: { type: 'integer', min: 0 },
     },
     search: ['name', 'slug', 'summary', 'description'],
-    filters: { status: { field: 'status', values: CONTENT_STATUSES } },
+    filters: {
+      status: { field: 'status', values: CONTENT_STATUSES },
+      techSolutions: { field: 'isTechSolution', type: 'boolean', excludeProjectsWhenTrue: true },
+    },
     orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
+    listInclude: { _count: { select: { services: true, projects: true } } },
+    createRecord: (request, data) => createUniqueSlugRecord(
+      getPrisma(request),
+      'businessArea',
+      { ...data, description: data.description ?? '' },
+      'name',
+      150,
+    ),
+    updateRecord: (request, id, data) => updateUniqueSlugRecord(
+      getPrisma(request),
+      'businessArea',
+      id,
+      Object.hasOwn(data, 'description') ? { ...data, description: data.description ?? '' } : data,
+      'name',
+      150,
+    ),
+    validateCreate: (request, data) => {
+      if (request.query.techSolutions === 'true' && data.isTechSolution !== true) {
+        throw invalid('Tech Solutions categories must be marked for Tech Solutions.');
+      }
+    },
+    validateUpdate: async (request, id, data) => {
+      if (request.query.techSolutions !== 'true') return;
+      const current = await getPrisma(request).businessArea.findUnique({
+        where: { id },
+        select: { isTechSolution: true, _count: { select: { projects: true } } },
+      });
+      if (!current?.isTechSolution || current._count.projects > 0 || data.isTechSolution === false) {
+        throw new HttpError(404, 'RESOURCE_NOT_FOUND', 'The requested resource was not found.');
+      }
+    },
+    validateScope: async (request, id) => {
+      if (request.query.techSolutions !== 'true') return;
+      const current = await getPrisma(request).businessArea.findUnique({
+        where: { id },
+        select: { isTechSolution: true, _count: { select: { projects: true } } },
+      });
+      if (!current?.isTechSolution || current._count.projects > 0) {
+        throw new HttpError(404, 'RESOURCE_NOT_FOUND', 'The requested resource was not found.');
+      }
+    },
+    validateDelete: async (request, id) => {
+      if (request.query.techSolutions === 'true') {
+        const category = await getPrisma(request).businessArea.findUnique({
+          where: { id },
+          select: { isTechSolution: true, _count: { select: { projects: true } } },
+        });
+        if (!category?.isTechSolution || category._count.projects > 0) {
+          throw new HttpError(404, 'RESOURCE_NOT_FOUND', 'The requested resource was not found.');
+        }
+      }
+      const prisma = getPrisma(request);
+      const [serviceCount, projectCount] = await Promise.all([
+        prisma.service.count({ where: { businessAreaId: id } }),
+        prisma.project.count({ where: { businessAreaId: id } }),
+      ]);
+      if (serviceCount > 0 || projectCount > 0) {
+        throw new HttpError(409, 'CATEGORY_IN_USE', 'Reassign or delete the services and projects in this category before deleting it.');
+      }
+    },
   },
   services: {
     model: 'service',
     fields: {
       businessAreaId: { type: 'uuid', required: true },
       title: { type: 'string', required: true, max: 160 },
-      slug: { type: 'slug', required: true, max: 180 },
-      summary: { type: 'string', max: 300, nullable: true },
+      slug: { type: 'slug', max: 180 },
+      summary: { type: 'string', required: true, max: 300 },
       description: { type: 'string', required: true },
+      icon: { type: 'enum', values: SERVICE_ICONS },
+      keyFeatures: { type: 'stringArray', maxItems: 20, itemMax: 180 },
       status: { type: 'enum', values: CONTENT_STATUSES, required: true },
       sortOrder: { type: 'integer', min: 0 },
       publishedAt: { type: 'date', nullable: true },
@@ -55,8 +122,58 @@ const resourceConfigs = {
     filters: {
       status: { field: 'status', values: CONTENT_STATUSES },
       businessAreaId: { field: 'businessAreaId', type: 'uuid' },
+      techSolutions: {
+        relation: 'businessArea',
+        relationField: 'isTechSolution',
+        type: 'boolean',
+        excludeProjectsWhenTrue: true,
+      },
     },
     orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
+    listInclude: { businessArea: { select: { id: true, name: true, status: true } } },
+    createRecord: (request, data) => createUniqueSlugRecord(
+      getPrisma(request),
+      'service',
+      { ...data, icon: data.icon ?? 'code', keyFeatures: data.keyFeatures ?? [] },
+      'title',
+      180,
+      'businessAreaId',
+    ),
+    validateCreate: async (request, data) => {
+      if (request.query.techSolutions === 'true') {
+        await validateTechSolutionCategory(request, data.businessAreaId);
+      }
+    },
+    validateUpdate: async (request, id, data) => {
+      if (request.query.techSolutions !== 'true') return;
+      const current = await getPrisma(request).service.findUnique({
+        where: { id },
+        select: { businessArea: { select: { isTechSolution: true, _count: { select: { projects: true } } } } },
+      });
+      if (!current?.businessArea?.isTechSolution || current.businessArea._count.projects > 0) {
+        throw new HttpError(404, 'RESOURCE_NOT_FOUND', 'The requested resource was not found.');
+      }
+      if (data.businessAreaId) await validateTechSolutionCategory(request, data.businessAreaId);
+    },
+    validateScope: async (request, id) => {
+      if (request.query.techSolutions !== 'true') return;
+      const current = await getPrisma(request).service.findUnique({
+        where: { id },
+        select: { businessArea: { select: { isTechSolution: true, _count: { select: { projects: true } } } } },
+      });
+      if (!current?.businessArea?.isTechSolution || current.businessArea._count.projects > 0) {
+        throw new HttpError(404, 'RESOURCE_NOT_FOUND', 'The requested resource was not found.');
+      }
+    },
+    updateRecord: (request, id, data) => updateUniqueSlugRecord(
+      getPrisma(request),
+      'service',
+      id,
+      data,
+      'title',
+      180,
+      'businessAreaId',
+    ),
   },
   projects: {
     model: 'project',
@@ -82,12 +199,16 @@ const resourceConfigs = {
     model: 'academicCourse',
     fields: {
       title: { type: 'string', required: true, max: 180 },
-      slug: { type: 'slug', required: true, max: 200 },
+      slug: { type: 'slug', max: 200 },
       summary: { type: 'string', max: 400, nullable: true },
+      description: { type: 'string', required: true },
+      imageUrl: { type: 'url', max: 2048, nullable: true, managedImagePath: true },
       level: { type: 'enum', values: COURSE_LEVELS, required: true },
       language: { type: 'string', max: 60, nullable: true },
-      episodeCount: { type: 'integer', min: 0, nullable: true },
-      externalUrl: { type: 'url', required: true, max: 2048 },
+      externalUrl: { type: 'youtube', max: 2048, nullable: true },
+      learningOutcomes: { type: 'stringArray', maxItems: 30, itemMax: 300 },
+      requirements: { type: 'stringArray', maxItems: 30, itemMax: 300 },
+      courseCategoryId: { type: 'uuid', required: true },
       status: { type: 'enum', values: CONTENT_STATUSES, required: true },
       sortOrder: { type: 'integer', min: 0 },
       publishedAt: { type: 'date', nullable: true },
@@ -96,8 +217,50 @@ const resourceConfigs = {
     filters: {
       status: { field: 'status', values: CONTENT_STATUSES },
       level: { field: 'level', values: COURSE_LEVELS },
+      courseCategoryId: { field: 'courseCategoryId', type: 'uuid' },
     },
     orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
+    listInclude: {
+      category: { select: { id: true, name: true, status: true } },
+      _count: { select: { episodes: true } },
+    },
+    validateCreate: async (request, data) => {
+      await validateCourseCategory(request, data.courseCategoryId, data.status);
+    },
+    validateUpdate: async (request, id, data) => {
+      const current = await getPrisma(request).academicCourse.findUnique({
+        where: { id },
+        select: { courseCategoryId: true, status: true },
+      });
+      if (!current) throw new HttpError(404, 'RESOURCE_NOT_FOUND', 'The requested resource was not found.');
+      const categoryId = data.courseCategoryId ?? current.courseCategoryId;
+      const status = data.status ?? current.status;
+      if (!categoryId) throw invalid('A course category is required.');
+      await validateCourseCategory(request, categoryId, status);
+    },
+    createRecord: (request, data) => createCourseWithUniqueSlug(getPrisma(request), data),
+    updateRecord: (request, id, data) => updateCourseWithUniqueSlug(getPrisma(request), id, data),
+  },
+  'course-categories': {
+    model: 'courseCategory',
+    fields: {
+      name: { type: 'string', required: true, max: 120 },
+      slug: { type: 'slug', required: true, max: 140 },
+      description: { type: 'string', max: 500, nullable: true },
+      imageUrl: { type: 'url', max: 2048, nullable: true, managedImagePath: true },
+      status: { type: 'enum', values: CONTENT_STATUSES, required: true },
+      sortOrder: { type: 'integer', min: 0 },
+    },
+    search: ['name', 'slug', 'description'],
+    filters: { status: { field: 'status', values: CONTENT_STATUSES } },
+    orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
+    listInclude: { _count: { select: { courses: true } } },
+    validateDelete: async (request, id) => {
+      const courseCount = await getPrisma(request).academicCourse.count({ where: { courseCategoryId: id } });
+      if (courseCount > 0) {
+        throw new HttpError(409, 'CATEGORY_IN_USE', 'Reassign or delete the courses in this category before deleting it.');
+      }
+    },
   },
   'blog-categories': {
     model: 'blogCategory',
@@ -241,6 +404,208 @@ function cleanString(value, max) {
   return cleaned;
 }
 
+function slugifyCourseTitle(title) {
+  const slug = title
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+    .slice(0, 200)
+    .replace(/-+$/g, '');
+  return slug || 'course';
+}
+
+function slugifyValue(value, maxLength, fallback) {
+  const slug = value
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+    .slice(0, maxLength)
+    .replace(/-+$/g, '');
+  return slug || fallback;
+}
+
+function uniqueSlugCandidate(base, suffix, maxLength) {
+  if (suffix === 1) return base;
+  const ending = `-${suffix}`;
+  return `${base.slice(0, maxLength - ending.length).replace(/-+$/g, '')}${ending}`;
+}
+
+function scopedSlugWhere(scopeField, scopeValue, slug) {
+  return scopeField
+    ? { [`${scopeField}_slug`]: { [scopeField]: scopeValue, slug } }
+    : { slug };
+}
+
+async function createUniqueSlugRecord(prisma, modelName, data, sourceField, maxLength, scopeField) {
+  const model = prisma[modelName];
+  const base = slugifyValue(data.slug || data[sourceField], maxLength, modelName === 'service' ? 'service' : 'business-area');
+  for (let suffix = 1; suffix <= 10_000; suffix += 1) {
+    const slug = uniqueSlugCandidate(base, suffix, maxLength);
+    const where = scopedSlugWhere(scopeField, data[scopeField], slug);
+    const existing = await model.findUnique({ where, select: { id: true } });
+    if (existing) continue;
+
+    try {
+      return await model.create({ data: { ...data, slug } });
+    } catch (error) {
+      if (error?.code !== 'P2002') throw error;
+      const conflictingRecord = await model.findUnique({ where, select: { id: true } });
+      if (!conflictingRecord) throw error;
+    }
+  }
+  throw new HttpError(409, 'SLUG_GENERATION_FAILED', 'A unique slug could not be generated.');
+}
+
+async function updateUniqueSlugRecord(prisma, modelName, id, data, sourceField, maxLength, scopeField) {
+  const model = prisma[modelName];
+  if (!Object.hasOwn(data, 'slug') && !Object.hasOwn(data, sourceField)) {
+    return model.update({ where: { id }, data });
+  }
+
+  const current = await model.findUnique({
+    where: { id },
+    select: { id: true, [sourceField]: true, slug: true, ...(scopeField ? { [scopeField]: true } : {}) },
+  });
+  if (!current) throw new HttpError(404, 'RESOURCE_NOT_FOUND', 'The requested resource was not found.');
+
+  const updateData = { ...data };
+  const sourceChanged = typeof data[sourceField] === 'string' && data[sourceField] !== current[sourceField];
+  const scopeChanged = scopeField && data[scopeField] && data[scopeField] !== current[scopeField];
+  if (
+    sourceChanged &&
+    current.slug === slugifyValue(current[sourceField], maxLength, modelName === 'service' ? 'service' : 'business-area') &&
+    (!Object.hasOwn(data, 'slug') || data.slug === current.slug)
+  ) {
+    updateData.slug = slugifyValue(data[sourceField], maxLength, modelName === 'service' ? 'service' : 'business-area');
+  }
+  if (scopeChanged && !Object.hasOwn(updateData, 'slug')) updateData.slug = current.slug;
+  if (!Object.hasOwn(updateData, 'slug')) return model.update({ where: { id }, data: updateData });
+
+  const scopeValue = updateData[scopeField] ?? current[scopeField];
+  const base = slugifyValue(updateData.slug || updateData[sourceField] || current[sourceField], maxLength, modelName === 'service' ? 'service' : 'business-area');
+  for (let suffix = 1; suffix <= 10_000; suffix += 1) {
+    const slug = uniqueSlugCandidate(base, suffix, maxLength);
+    const where = scopedSlugWhere(scopeField, scopeValue, slug);
+    const existing = await model.findUnique({ where, select: { id: true } });
+    if (existing && existing.id !== id) continue;
+
+    try {
+      return await model.update({ where: { id }, data: { ...updateData, slug } });
+    } catch (error) {
+      if (error?.code !== 'P2002') throw error;
+      const conflictingRecord = await model.findUnique({ where, select: { id: true } });
+      if (!conflictingRecord || conflictingRecord.id === id) throw error;
+    }
+  }
+  throw new HttpError(409, 'SLUG_GENERATION_FAILED', 'A unique slug could not be generated.');
+}
+
+function courseSlugCandidate(base, suffix) {
+  if (suffix === 1) return base;
+  const ending = `-${suffix}`;
+  return `${base.slice(0, 200 - ending.length).replace(/-+$/g, '')}${ending}`;
+}
+
+async function createCourseWithUniqueSlug(prisma, data) {
+  const base = slugifyCourseTitle(data.slug || data.title);
+  for (let suffix = 1; suffix <= 10_000; suffix += 1) {
+    const slug = courseSlugCandidate(base, suffix);
+    const existing = await prisma.academicCourse.findUnique({
+      where: { slug },
+      select: { id: true },
+    });
+    if (existing) continue;
+
+    try {
+      return await prisma.academicCourse.create({ data: { ...data, slug } });
+    } catch (error) {
+      if (error?.code !== 'P2002') throw error;
+      const conflictingCourse = await prisma.academicCourse.findUnique({
+        where: { slug },
+        select: { id: true },
+      });
+      if (!conflictingCourse) throw error;
+    }
+  }
+  throw new HttpError(409, 'SLUG_GENERATION_FAILED', 'A unique course slug could not be generated.');
+}
+
+async function updateCourseWithUniqueSlug(prisma, id, data) {
+  const current = await prisma.academicCourse.findUnique({
+    where: { id },
+    select: { id: true, title: true, slug: true },
+  });
+  if (!current) throw new HttpError(404, 'RESOURCE_NOT_FOUND', 'The requested resource was not found.');
+
+  const updateData = { ...data };
+  const titleChanged = typeof data.title === 'string' && data.title !== current.title;
+  const existingSlugWasGenerated = typeof current.title === 'string'
+    && current.slug === slugifyCourseTitle(current.title);
+  if (
+    titleChanged &&
+    existingSlugWasGenerated &&
+    (!Object.hasOwn(data, 'slug') || data.slug === current.slug)
+  ) {
+    updateData.slug = slugifyCourseTitle(data.title);
+  }
+
+  if (!Object.hasOwn(updateData, 'slug')) {
+    return prisma.academicCourse.update({ where: { id }, data: updateData });
+  }
+
+  const base = slugifyCourseTitle(updateData.slug);
+  for (let suffix = 1; suffix <= 10_000; suffix += 1) {
+    const slug = courseSlugCandidate(base, suffix);
+    const existing = await prisma.academicCourse.findUnique({
+      where: { slug },
+      select: { id: true },
+    });
+    if (existing && existing.id !== id) continue;
+
+    try {
+      return await prisma.academicCourse.update({
+        where: { id },
+        data: { ...updateData, slug },
+      });
+    } catch (error) {
+      if (error?.code !== 'P2002') throw error;
+      const conflictingCourse = await prisma.academicCourse.findUnique({
+        where: { slug },
+        select: { id: true },
+      });
+      if (!conflictingCourse || conflictingCourse.id === id) throw error;
+    }
+  }
+  throw new HttpError(409, 'SLUG_GENERATION_FAILED', 'A unique course slug could not be generated.');
+}
+
+function parseYouTubeUrl(value, max) {
+  const url = cleanString(value, max);
+  let parsed;
+  try {
+    parsed = new URL(url);
+  } catch {
+    throw invalid('A valid YouTube video URL is required.');
+  }
+  const host = parsed.hostname.toLowerCase();
+  const isShortUrl = host === 'youtu.be';
+  const isYouTubeHost = ['youtube.com', 'www.youtube.com', 'm.youtube.com', 'music.youtube.com'].includes(host);
+  const hasVideo = isShortUrl
+    ? parsed.pathname.split('/').filter(Boolean).length === 1
+    : isYouTubeHost && (
+      (parsed.pathname === '/watch' && Boolean(parsed.searchParams.get('v'))) ||
+      /^\/(?:embed|shorts|live)\/[^/]+/.test(parsed.pathname)
+    );
+  if (parsed.protocol !== 'https:' || !hasVideo) {
+    throw invalid('A valid HTTPS YouTube video URL is required.');
+  }
+  return url;
+}
+
 function parseField(value, spec) {
   if (value === null) {
     if (spec.nullable) return null;
@@ -248,6 +613,16 @@ function parseField(value, spec) {
   }
 
   if (spec.type === 'string') return cleanString(value, spec.max);
+  if (spec.type === 'stringArray') {
+    if (!Array.isArray(value) || value.length > spec.maxItems) {
+      throw invalid('List fields contain an invalid number of entries.');
+    }
+    return value.map((entry) => {
+      const cleaned = cleanString(entry, spec.itemMax);
+      if (!cleaned) throw invalid('List entries cannot be empty.');
+      return cleaned;
+    });
+  }
   if (spec.type === 'slug') {
     const slug = cleanString(value, spec.max).toLowerCase();
     if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) {
@@ -290,7 +665,7 @@ function parseField(value, spec) {
     const url = cleanString(value, spec.max);
     if (
       spec.managedImagePath &&
-      /^\/uploads\/images\/(?:company|business-areas|projects|blog|team)\/[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.(?:jpg|png|webp)$/.test(url)
+      /^\/uploads\/images\/(?:company|business-areas|projects|blog|team|courses|course-categories)\/[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.(?:jpg|png|webp)$/.test(url)
     ) return url;
     let parsed;
     try {
@@ -301,7 +676,19 @@ function parseField(value, spec) {
     if (!['http:', 'https:'].includes(parsed.protocol)) throw invalid('Only HTTP and HTTPS URLs are allowed.');
     return url;
   }
+  if (spec.type === 'youtube') return parseYouTubeUrl(value, spec.max);
   throw invalid();
+}
+
+async function validateCourseCategory(request, id, courseStatus) {
+  const category = await getPrisma(request).courseCategory.findUnique({
+    where: { id },
+    select: { id: true, status: true },
+  });
+  if (!category) throw invalid('Select an existing course category.');
+  if (courseStatus === 'PUBLISHED' && category.status !== 'PUBLISHED') {
+    throw invalid('A course can only be published in a published category.');
+  }
 }
 
 function parseBody(body, fields, { creating = false, requiredFields = true } = {}) {
@@ -336,10 +723,19 @@ function parseFilters(query, config) {
       if (!filter.values.includes(query[key])) throw invalid(`The ${key} filter is invalid.`);
       where[filter.field] = query[key];
     } else {
-      where[filter.field] = parseField(
+      const value = parseField(
         filter.type === 'boolean' ? query[key] === 'true' ? true : query[key] === 'false' ? false : query[key] : query[key],
         { type: filter.type },
       );
+      if (filter.relation) {
+        where[filter.relation] = {
+          [filter.relationField]: value,
+          ...(filter.excludeProjectsWhenTrue && value ? { projects: { none: {} } } : {}),
+        };
+      } else {
+        where[filter.field] = value;
+        if (filter.excludeProjectsWhenTrue && value) where.projects = { none: {} };
+      }
     }
   }
   const search = query.search === undefined ? undefined : cleanString(query.search, 100);
@@ -347,6 +743,16 @@ function parseFilters(query, config) {
     where.OR = config.search.map((field) => ({ [field]: { contains: search, mode: 'insensitive' } }));
   }
   return where;
+}
+
+async function validateTechSolutionCategory(request, id) {
+  const category = await getPrisma(request).businessArea.findUnique({
+    where: { id },
+    select: { isTechSolution: true, _count: { select: { projects: true } } },
+  });
+  if (!category?.isTechSolution || category._count.projects > 0) {
+    throw invalid('Select a category managed by Tech Solutions.');
+  }
 }
 
 function sendItem(response, item, status = 200) {
@@ -374,6 +780,7 @@ function createResourceRoutes(router, path, config) {
       model.findMany({
         where,
         orderBy: config.orderBy,
+        ...(config.listInclude ? { include: config.listInclude } : {}),
         skip: (page - 1) * pageSize,
         take: pageSize,
       }),
@@ -392,12 +799,15 @@ function createResourceRoutes(router, path, config) {
     }
     const data = parseBody(request.body, config.fields, { creating: true });
     if (config.validateCreate) await config.validateCreate(request, data);
-    const item = await modelFor(request).create({ data });
+    const item = config.createRecord
+      ? await config.createRecord(request, data)
+      : await modelFor(request).create({ data });
     sendItem(response, item, 201);
   });
 
   router.get(`${collectionPath}/:id`, async (request, response) => {
     validateId(request.params.id);
+    if (config.validateScope) await config.validateScope(request, request.params.id);
     const item = await modelFor(request).findUnique({ where: { id: request.params.id } });
     if (!item) throw new HttpError(404, 'RESOURCE_NOT_FOUND', 'The requested resource was not found.');
     sendItem(response, item);
@@ -406,8 +816,11 @@ function createResourceRoutes(router, path, config) {
   const update = async (request, response) => {
     validateId(request.params.id);
     const data = parseBody(request.body, config.fields);
+    if (config.validateScope) await config.validateScope(request, request.params.id);
     if (config.validateUpdate) await config.validateUpdate(request, request.params.id, data);
-    const item = await modelFor(request).update({ where: { id: request.params.id }, data });
+    const item = config.updateRecord
+      ? await config.updateRecord(request, request.params.id, data)
+      : await modelFor(request).update({ where: { id: request.params.id }, data });
     sendItem(response, item);
   };
   router.patch(`${collectionPath}/:id`, update);
@@ -418,6 +831,8 @@ function createResourceRoutes(router, path, config) {
       throw new HttpError(405, 'METHOD_NOT_ALLOWED', 'This resource cannot be deleted.');
     }
     validateId(request.params.id);
+    if (config.validateScope) await config.validateScope(request, request.params.id);
+    if (config.validateDelete) await config.validateDelete(request, request.params.id);
     await modelFor(request).delete({ where: { id: request.params.id } });
     response.json({ status: 'success' });
   });
@@ -574,6 +989,128 @@ export function createAdminCmsRouter() {
   for (const [path, config] of Object.entries(resourceConfigs)) {
     createResourceRoutes(adminRouter, path, config);
   }
+
+  adminRouter.get('/academic-courses/:courseId/episodes', async (request, response) => {
+    validateId(request.params.courseId);
+    const page = parsePageValue(request.query.page, 1, 1_000_000);
+    const pageSize = parsePageValue(request.query.pageSize, 50, 100);
+    const prisma = getPrisma(request);
+    const course = await prisma.academicCourse.findUnique({
+      where: { id: request.params.courseId },
+      select: { id: true },
+    });
+    if (!course) throw new HttpError(404, 'RESOURCE_NOT_FOUND', 'The requested course was not found.');
+    const where = { courseId: request.params.courseId };
+    const [items, total] = await Promise.all([
+      prisma.courseEpisode.findMany({
+        where,
+        orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }, { id: 'asc' }],
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+      prisma.courseEpisode.count({ where }),
+    ]);
+    response.json({
+      status: 'success',
+      items,
+      pagination: { page, pageSize, total, pageCount: Math.ceil(total / pageSize) },
+    });
+  });
+
+  adminRouter.post('/academic-courses/:courseId/episodes', async (request, response) => {
+    validateId(request.params.courseId);
+    const prisma = getPrisma(request);
+    const course = await prisma.academicCourse.findUnique({
+      where: { id: request.params.courseId },
+      select: { id: true },
+    });
+    if (!course) throw new HttpError(404, 'RESOURCE_NOT_FOUND', 'The requested course was not found.');
+    const data = parseBody(request.body, {
+      title: { type: 'string', required: true, max: 180 },
+      summary: { type: 'string', max: 500, nullable: true },
+      youtubeUrl: { type: 'youtube', required: true, max: 2048 },
+      sortOrder: { type: 'integer', min: 0 },
+      status: { type: 'enum', values: CONTENT_STATUSES, required: true },
+    }, { creating: true });
+    const item = await prisma.courseEpisode.create({
+      data: { ...data, courseId: request.params.courseId },
+    });
+    sendItem(response, item, 201);
+  });
+
+  adminRouter.patch('/academic-courses/:courseId/episodes/reorder', async (request, response) => {
+    validateId(request.params.courseId);
+    const episodeIds = request.body?.episodeIds;
+    if (
+      !Array.isArray(episodeIds) ||
+      episodeIds.length > 100 ||
+      episodeIds.some((id) => typeof id !== 'string' || !UUID_PATTERN.test(id)) ||
+      new Set(episodeIds).size !== episodeIds.length
+    ) {
+      throw invalid('Episode order must contain unique valid episode identifiers.');
+    }
+
+    const prisma = getPrisma(request);
+    const course = await prisma.academicCourse.findUnique({
+      where: { id: request.params.courseId },
+      select: { id: true },
+    });
+    if (!course) throw new HttpError(404, 'RESOURCE_NOT_FOUND', 'The requested course was not found.');
+    const current = await prisma.courseEpisode.findMany({
+      where: { courseId: request.params.courseId },
+      select: { id: true },
+    });
+    if (
+      current.length !== episodeIds.length ||
+      current.some((episode) => !episodeIds.includes(episode.id))
+    ) {
+      throw invalid('Episode order must include every episode in this course exactly once.');
+    }
+
+    await prisma.$transaction(episodeIds.map((id, sortOrder) => prisma.courseEpisode.update({
+      where: { id },
+      data: { sortOrder },
+    })));
+    response.json({ status: 'success' });
+  });
+
+  const updateEpisode = async (request, response) => {
+    validateId(request.params.courseId);
+    validateId(request.params.episodeId);
+    const prisma = getPrisma(request);
+    const current = await prisma.courseEpisode.findFirst({
+      where: { id: request.params.episodeId, courseId: request.params.courseId },
+      select: { id: true },
+    });
+    if (!current) throw new HttpError(404, 'RESOURCE_NOT_FOUND', 'The requested episode was not found.');
+    const data = parseBody(request.body, {
+      title: { type: 'string', required: true, max: 180 },
+      summary: { type: 'string', max: 500, nullable: true },
+      youtubeUrl: { type: 'youtube', required: true, max: 2048 },
+      sortOrder: { type: 'integer', min: 0 },
+      status: { type: 'enum', values: CONTENT_STATUSES, required: true },
+    });
+    const item = await prisma.courseEpisode.update({
+      where: { id: request.params.episodeId },
+      data,
+    });
+    sendItem(response, item);
+  };
+  adminRouter.put('/academic-courses/:courseId/episodes/:episodeId', updateEpisode);
+  adminRouter.patch('/academic-courses/:courseId/episodes/:episodeId', updateEpisode);
+
+  adminRouter.delete('/academic-courses/:courseId/episodes/:episodeId', async (request, response) => {
+    validateId(request.params.courseId);
+    validateId(request.params.episodeId);
+    const prisma = getPrisma(request);
+    const episode = await prisma.courseEpisode.findFirst({
+      where: { id: request.params.episodeId, courseId: request.params.courseId },
+      select: { id: true },
+    });
+    if (!episode) throw new HttpError(404, 'RESOURCE_NOT_FOUND', 'The requested episode was not found.');
+    await prisma.courseEpisode.delete({ where: { id: request.params.episodeId } });
+    response.json({ status: 'success' });
+  });
 
   adminRouter.get('/contact-messages', requireAdminRole('SUPER_ADMIN'), async (request, response) => {
     const page = parsePageValue(request.query.page, 1, 1_000_000);

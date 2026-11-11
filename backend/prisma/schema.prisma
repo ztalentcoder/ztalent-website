@@ -90,6 +90,7 @@ model BusinessArea {
   summary     String?       @db.VarChar(300)
   description String        @db.Text
   imageUrl    String?       @db.VarChar(2048)
+  isTechSolution Boolean    @default(false)
   status      ContentStatus
   sortOrder   Int           @default(0)
   createdAt   DateTime      @default(now()) @db.Timestamptz(3)
@@ -98,6 +99,7 @@ model BusinessArea {
   projects    Project[]
 
   @@index([status, sortOrder])
+  @@index([isTechSolution, sortOrder])
   @@map("business_areas")
 }
 
@@ -108,6 +110,8 @@ model Service {
   slug          String        @db.VarChar(180)
   summary       String?       @db.VarChar(300)
   description   String        @db.Text
+  icon          String        @default("code") @db.VarChar(40)
+  keyFeatures   String[]      @default([]) @db.Text
   status        ContentStatus
   sortOrder     Int           @default(0)
   publishedAt   DateTime?     @db.Timestamptz(3)
@@ -142,22 +146,62 @@ model Project {
 }
 
 model AcademicCourse {
-  id           String        @id @default(uuid()) @db.Uuid
-  title        String        @db.VarChar(180)
-  slug         String        @unique @db.VarChar(200)
-  summary      String?       @db.VarChar(400)
-  level        CourseLevel
-  language     String?       @db.VarChar(60)
-  episodeCount Int?
-  externalUrl  String        @db.VarChar(2048)
-  status       ContentStatus
-  sortOrder    Int           @default(0)
-  publishedAt  DateTime?     @db.Timestamptz(3)
-  createdAt    DateTime      @default(now()) @db.Timestamptz(3)
-  updatedAt    DateTime      @updatedAt @db.Timestamptz(3)
+  id              String          @id @default(uuid()) @db.Uuid
+  title           String          @db.VarChar(180)
+  slug            String          @unique @db.VarChar(200)
+  summary         String?         @db.VarChar(400)
+  description     String          @default("") @db.Text
+  imageUrl        String?         @db.VarChar(2048)
+  level           CourseLevel
+  language        String?         @db.VarChar(60)
+  externalUrl     String?         @db.VarChar(2048)
+  learningOutcomes String[]       @default([])
+  requirements    String[]        @default([])
+  courseCategoryId String?        @db.Uuid
+  legacyEpisodeCount Int          @default(0) @ignore
+  status          ContentStatus
+  sortOrder       Int             @default(0)
+  publishedAt     DateTime?       @db.Timestamptz(3)
+  createdAt       DateTime        @default(now()) @db.Timestamptz(3)
+  updatedAt       DateTime        @updatedAt @db.Timestamptz(3)
+  category        CourseCategory? @relation(fields: [courseCategoryId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  episodes        CourseEpisode[]
 
   @@index([status, sortOrder])
+  @@index([courseCategoryId, status])
   @@map("academic_courses")
+}
+
+model CourseCategory {
+  id          String          @id @default(uuid()) @db.Uuid
+  name        String          @db.VarChar(120)
+  slug        String          @unique @db.VarChar(140)
+  description String?         @db.VarChar(500)
+  imageUrl    String?         @db.VarChar(2048)
+  status      ContentStatus   @default(DRAFT)
+  sortOrder   Int             @default(0)
+  createdAt   DateTime        @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime        @updatedAt @db.Timestamptz(3)
+  courses     AcademicCourse[]
+
+  @@index([status, sortOrder])
+  @@map("course_categories")
+}
+
+model CourseEpisode {
+  id          String        @id @default(uuid()) @db.Uuid
+  courseId    String        @db.Uuid
+  title       String        @db.VarChar(180)
+  summary     String?       @db.VarChar(500)
+  youtubeUrl  String        @db.VarChar(2048)
+  sortOrder   Int           @default(0)
+  status      ContentStatus @default(DRAFT)
+  createdAt   DateTime      @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime      @updatedAt @db.Timestamptz(3)
+  course      AcademicCourse @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@index([courseId, status, sortOrder])
+  @@map("course_episodes")
 }
 
 model BlogCategory {

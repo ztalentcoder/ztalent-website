@@ -1,0 +1,65 @@
+.page {
+  display: grid;
+  min-width: 0;
+  gap: 20px;
+}
+
+.heading h1 {
+  margin-top: 4px;
+  color: var(--ink);
+  font-size: clamp(1.75rem, 3vw, 2.25rem);
+}
+
+.heading p:not(.eyebrow) {
+  margin-top: 6px;
+  color: var(--muted);
+}
+
+.eyebrow {
+  color: var(--deep-blue);
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  border-bottom: 1px solid var(--line);
+}
+
+.tabs button {
+  min-height: 42px;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  padding: 9px 16px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+  transition: background-color 140ms ease, color 140ms ease;
+}
+
+.tabs button:hover {
+  background: var(--soft);
+  color: var(--ink);
+}
+
+.tabs button:focus-visible {
+  outline: 3px solid #7cc0f5;
+  outline-offset: -2px;
+}
+
+.tabs .activeTab {
+  border-bottom-color: var(--blue);
+  color: var(--deep-blue);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tabs button {
+    transition: none;
+  }
+}

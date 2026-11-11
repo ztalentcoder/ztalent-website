@@ -12,6 +12,8 @@ const resourceModels = [
   'service',
   'project',
   'academicCourse',
+  'courseCategory',
+  'courseEpisode',
   'blogCategory',
   'blogPost',
   'teamMember',
@@ -52,6 +54,7 @@ function createCmsPrisma({ role = 'EDITOR', overrides = {} } = {}) {
       upsert: async ({ create }) => ({ ...create, socialLinks: [] }),
     };
   }
+  prisma.$transaction = async (operations) => Promise.all(operations);
   Object.assign(prisma, overrides);
   return prisma;
 }
@@ -114,6 +117,7 @@ test('CMS mutations validate fields, normalize slugs, and return standard item r
     prismaClient: createCmsPrisma({
       overrides: {
         businessArea: {
+          findUnique: async () => null,
           create: async ({ data }) => {
             created = data;
             return { id: 'area-id', ...data };
@@ -377,6 +381,7 @@ test('known Prisma constraint errors map to safe client errors', async () => {
     prismaClient: createCmsPrisma({
       overrides: {
         businessArea: {
+          findUnique: async () => null,
           create: async () => {
             const error = new Error('database details');
             error.code = 'P2002';
@@ -471,6 +476,7 @@ test('foreign-key and missing-record errors are sanitized', async () => {
     prismaClient: createCmsPrisma({
       overrides: {
         service: {
+          findUnique: async () => null,
           create: async () => { throw serviceError; },
         },
         project: {
@@ -488,6 +494,7 @@ test('foreign-key and missing-record errors are sanitized', async () => {
       body: JSON.stringify({
         businessAreaId: validId,
         title: 'Research service',
+        summary: 'Research tools.',
         slug: 'research-service',
         description: 'Service description',
         status: 'DRAFT',
@@ -525,6 +532,258 @@ test('contact-message records cannot be deleted and publication filters are vali
     });
     assert.equal(deleteMessage.status, 404);
     assert.equal((await deleteMessage.json()).error.code, 'NOT_FOUND');
+  });
+});
+
+test('service categories and services receive unique generated slugs and retain safe editable fields', async () => {
+  const categories = [];
+  const services = [];
+  const createSlugModel = (records, scoped = false) => ({
+    findUnique: async ({ where }) => {
+      if (where.id) return records.find((item) => item.id === where.id) ?? null;
+      const unique = scoped ? where.businessAreaId_slug : where;
+      return records.find((item) => item.slug === unique.slug
+        && (!scoped || item.businessAreaId === unique.businessAreaId)) ?? null;
+    },
+    create: async ({ data }) => {
+      if (records.some((item) => item.slug === data.slug
+        && (!scoped || item.businessAreaId === data.businessAreaId))) {
+        const error = new Error('unique constraint');
+        error.code = 'P2002';
+        throw error;
+      }
+      const item = {
+        id: records.length === 0
+          ? '123e4567-e89b-42d3-a456-426614174000'
+          : '123e4567-e89b-42d3-a456-426614174001',
+        ...data,
+      };
+      records.push(item);
+      return item;
+    },
+    update: async ({ where, data }) => {
+      const item = records.find((record) => record.id === where.id);
+      Object.assign(item, data);
+      return item;
+    },
+    delete: async ({ where }) => {
+      const index = records.findIndex((record) => record.id === where.id);
+      records.splice(index, 1);
+      return {};
+    },
+  });
+  const base = createCmsPrisma();
+  const app = cmsApp({
+    overrides: {
+      businessArea: { ...base.businessArea, ...createSlugModel(categories) },
+      service: {
+        ...base.service,
+        ...createSlugModel(services, true),
+        count: async ({ where }) => services.filter((service) => service.businessAreaId === where.businessAreaId).length,
+      },
+    },
+  });
+
+  await withServer(app, async (baseUrl) => {
+    const createCategory = () => fetch(`${baseUrl}/api/admin/business-areas`, {
+      method: 'POST',
+      headers: { ...adminHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'Software Development', summary: 'Build software.', status: 'PUBLISHED' }),
+    });
+    const categoryResponses = await Promise.all([createCategory(), createCategory()]);
+    assert.deepEqual(categoryResponses.map((response) => response.status), [201, 201]);
+    assert.deepEqual(categories.map(({ slug }) => slug).sort(), ['software-development', 'software-development-2']);
+
+    const createService = () => fetch(`${baseUrl}/api/admin/services`, {
+      method: 'POST',
+      headers: { ...adminHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        businessAreaId: '123e4567-e89b-42d3-a456-426614174000',
+        title: 'Web Development',
+        summary: 'Custom websites.',
+        description: 'Build accessible web applications.',
+        icon: 'code',
+        keyFeatures: ['Accessible interfaces', 'Responsive layouts'],
+        status: 'DRAFT',
+      }),
+    });
+    const serviceResponses = await Promise.all([createService(), createService()]);
+    assert.deepEqual(serviceResponses.map((response) => response.status), [201, 201]);
+    assert.deepEqual(services.map(({ slug }) => slug).sort(), ['web-development', 'web-development-2']);
+    assert.deepEqual(services[0].keyFeatures, ['Accessible interfaces', 'Responsive layouts']);
+
+    const categoryEdit = await fetch(`${baseUrl}/api/admin/business-areas/123e4567-e89b-42d3-a456-426614174000`, {
+      method: 'PATCH',
+      headers: { ...adminHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'Software Engineering', sortOrder: 1, status: 'DRAFT' }),
+    });
+    assert.equal(categoryEdit.status, 200);
+    assert.equal(categories[0].slug, 'software-engineering');
+    assert.equal(categories[0].sortOrder, 1);
+    assert.equal(categories[0].status, 'DRAFT');
+
+    const serviceId = '123e4567-e89b-42d3-a456-426614174000';
+    const publishService = async (status, sortOrder) => fetch(`${baseUrl}/api/admin/services/${serviceId}`, {
+      method: 'PATCH',
+      headers: { ...adminHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status, sortOrder }),
+    });
+    assert.equal((await publishService('PUBLISHED', 2)).status, 200);
+    assert.equal(services[0].status, 'PUBLISHED');
+    assert.equal(services[0].sortOrder, 2);
+    assert.equal((await publishService('DRAFT', 3)).status, 200);
+    assert.equal((await publishService('ARCHIVED', 4)).status, 200);
+    assert.equal(services[0].status, 'ARCHIVED');
+    for (const service of [...services]) {
+      const deleted = await fetch(`${baseUrl}/api/admin/services/${service.id}`, {
+        method: 'DELETE',
+        headers: adminHeaders(),
+      });
+      assert.equal(deleted.status, 200);
+    }
+    assert.equal(services.length, 0);
+
+    const invalidIcon = await fetch(`${baseUrl}/api/admin/services`, {
+      method: 'POST',
+      headers: { ...adminHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        businessAreaId: '123e4567-e89b-42d3-a456-426614174000',
+        title: 'Invalid icon',
+        summary: 'Summary',
+        description: 'Description',
+        icon: '<svg>',
+        status: 'DRAFT',
+      }),
+    });
+    assert.equal(invalidIcon.status, 400);
+    assert.equal((await invalidIcon.json()).error.code, 'VALIDATION_ERROR');
+
+    const deleteCategory = await fetch(`${baseUrl}/api/admin/business-areas/123e4567-e89b-42d3-a456-426614174000`, {
+      method: 'DELETE',
+      headers: adminHeaders(),
+    });
+    assert.equal(deleteCategory.status, 200);
+  });
+});
+
+test('service categories cannot be deleted while services remain assigned', async () => {
+  let deleted = false;
+  const app = cmsApp({
+    overrides: {
+      service: { ...createCmsPrisma().service, count: async () => 1 },
+      project: { ...createCmsPrisma().project, count: async () => 0 },
+      businessArea: {
+        ...createCmsPrisma().businessArea,
+        delete: async () => { deleted = true; },
+      },
+    },
+  });
+  await withServer(app, async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/api/admin/business-areas/123e4567-e89b-42d3-a456-426614174000`, {
+      method: 'DELETE',
+      headers: adminHeaders(),
+    });
+    assert.equal(response.status, 409);
+    assert.match((await response.json()).error.message, /reassign or delete the services/i);
+    assert.equal(deleted, false);
+  });
+});
+
+test('Tech Solutions filters and mutation guards do not expose or alter other categories', async () => {
+  const id = '123e4567-e89b-42d3-a456-426614174000';
+  const seen = {};
+  const categoryUpdates = [];
+  const serviceUpdates = [];
+  const categoryDeletes = [];
+  const app = cmsApp({
+    overrides: {
+      businessArea: {
+        ...createCmsPrisma().businessArea,
+        findMany: async ({ where }) => { seen.categoryWhere = where; return []; },
+        count: async () => 0,
+        findUnique: async () => ({ id, isTechSolution: false }),
+        update: async (options) => { categoryUpdates.push(options); return {}; },
+        delete: async (options) => { categoryDeletes.push(options); },
+      },
+      service: {
+        ...createCmsPrisma().service,
+        findMany: async ({ where }) => { seen.serviceWhere = where; return []; },
+        count: async () => 0,
+        findUnique: async () => ({ businessArea: { isTechSolution: false } }),
+        update: async (options) => { serviceUpdates.push(options); return {}; },
+      },
+    },
+  });
+
+  await withServer(app, async (baseUrl) => {
+    const categoryList = await fetch(`${baseUrl}/api/admin/business-areas?techSolutions=true`, {
+      headers: adminHeaders(),
+    });
+    const serviceList = await fetch(`${baseUrl}/api/admin/services?techSolutions=true`, {
+      headers: adminHeaders(),
+    });
+    assert.equal(categoryList.status, 200);
+    assert.equal(serviceList.status, 200);
+    assert.deepEqual(seen.categoryWhere, { isTechSolution: true, projects: { none: {} } });
+    assert.deepEqual(seen.serviceWhere, {
+      businessArea: { isTechSolution: true, projects: { none: {} } },
+    });
+
+    const categoryUpdate = await fetch(`${baseUrl}/api/admin/business-areas/${id}?techSolutions=true`, {
+      method: 'PATCH',
+      headers: { ...adminHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'Other content' }),
+    });
+    const serviceUpdate = await fetch(`${baseUrl}/api/admin/services/${id}?techSolutions=true`, {
+      method: 'PATCH',
+      headers: { ...adminHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: 'Other service' }),
+    });
+    const categoryDelete = await fetch(`${baseUrl}/api/admin/business-areas/${id}?techSolutions=true`, {
+      method: 'DELETE',
+      headers: adminHeaders(),
+    });
+    assert.deepEqual([categoryUpdate.status, serviceUpdate.status, categoryDelete.status], [404, 404, 404]);
+    assert.equal(categoryUpdates.length, 0);
+    assert.equal(serviceUpdates.length, 0);
+    assert.equal(categoryDeletes.length, 0);
+  });
+});
+
+test('Tech Solutions cannot update categories or services shared with portfolio projects', async () => {
+  const id = '123e4567-e89b-42d3-a456-426614174000';
+  const updates = [];
+  const app = cmsApp({
+    overrides: {
+      businessArea: {
+        ...createCmsPrisma().businessArea,
+        findUnique: async () => ({ isTechSolution: true, _count: { projects: 1 } }),
+        update: async (options) => { updates.push(options); return {}; },
+      },
+      service: {
+        ...createCmsPrisma().service,
+        findUnique: async () => ({
+          businessArea: { isTechSolution: true, _count: { projects: 1 } },
+        }),
+        update: async (options) => { updates.push(options); return {}; },
+      },
+    },
+  });
+
+  await withServer(app, async (baseUrl) => {
+    const categoryResponse = await fetch(`${baseUrl}/api/admin/business-areas/${id}?techSolutions=true`, {
+      method: 'PATCH',
+      headers: { ...adminHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'Shared category' }),
+    });
+    const serviceResponse = await fetch(`${baseUrl}/api/admin/services/${id}?techSolutions=true`, {
+      method: 'PATCH',
+      headers: { ...adminHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: 'Shared service' }),
+    });
+
+    assert.deepEqual([categoryResponse.status, serviceResponse.status], [404, 404]);
+    assert.equal(updates.length, 0);
   });
 });
 

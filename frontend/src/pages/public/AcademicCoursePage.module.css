@@ -1,0 +1,261 @@
+.details {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: start;
+  gap: 30px;
+}
+
+.media {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--soft);
+}
+
+.media img,
+.imageFallback {
+  display: grid;
+  width: 100%;
+  min-height: 250px;
+  max-height: 420px;
+  place-items: center;
+  object-fit: cover;
+}
+
+.imageFallback {
+  color: var(--muted);
+}
+
+.courseInfo {
+  display: grid;
+  gap: 18px;
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tags span {
+  border-radius: 999px;
+  padding: 5px 11px;
+  background: var(--soft);
+  color: var(--deep-blue);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+.description {
+  color: var(--ink);
+  line-height: 1.8;
+  white-space: pre-wrap;
+}
+
+.youtubeLink,
+.episodeLink {
+  display: inline-flex;
+  width: fit-content;
+  min-height: 42px;
+  align-items: center;
+  gap: 9px;
+  border-radius: 8px;
+  padding: 9px 13px;
+  background: #b42318;
+  color: #ffffff;
+  font-size: 0.84rem;
+  font-weight: 750;
+  text-decoration: none;
+  transition: background-color 140ms ease, color 140ms ease;
+}
+
+.youtubeLink svg,
+.episodeLink svg {
+  width: 19px;
+  height: 19px;
+  fill: currentColor;
+}
+
+.youtubeLink:hover,
+.episodeLink:hover {
+  background: #8f1b13;
+  color: #ffffff;
+  text-decoration: none;
+}
+
+.youtubeLink:focus-visible,
+.episodeLink:focus-visible,
+.returnLink a:focus-visible {
+  outline: 3px solid #7cc0f5;
+  outline-offset: 3px;
+}
+
+.learningGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
+  gap: 22px;
+  margin-top: 40px;
+}
+
+.infoCard {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 22px;
+  background: var(--card);
+  box-shadow: var(--shadow);
+}
+
+.infoCard h2,
+.episodeHeading h2 {
+  color: var(--ink);
+  font-size: 1.3rem;
+}
+
+.infoCard ul {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+  padding-left: 20px;
+  color: var(--muted);
+}
+
+.episodes {
+  margin-top: 44px;
+}
+
+.episodeHeading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 16px;
+}
+
+.episodeHeading > span {
+  color: var(--muted);
+  font-size: 0.86rem;
+  font-weight: 650;
+}
+
+.eyebrow {
+  margin-bottom: 5px;
+  color: var(--deep-blue);
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.episodeList {
+  display: grid;
+  padding: 0;
+  list-style: none;
+}
+
+.episode {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+  border-bottom: 1px solid var(--line);
+  padding: 18px 4px;
+}
+
+.episodeNumber {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border-radius: 12px;
+  background: var(--soft);
+  color: var(--deep-blue);
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
+.episodeInfo {
+  min-width: 0;
+}
+
+.episodeInfo h3 {
+  color: var(--ink);
+  font-size: 1rem;
+}
+
+.episodeInfo p {
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 0.86rem;
+}
+
+.noEpisodes {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  margin-top: 18px;
+  padding: 18px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.returnLink {
+  margin-top: 32px;
+}
+
+.returnLink a {
+  color: var(--deep-blue);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.returnLink a:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+@media (max-width: 700px) {
+  .details {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 22px;
+  }
+
+  .media img,
+  .imageFallback {
+    min-height: 190px;
+    max-height: 300px;
+  }
+
+  .episode {
+    grid-template-columns: 40px minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  .episodeNumber {
+    width: 36px;
+    height: 36px;
+  }
+
+  .episodeLink {
+    grid-column: 2;
+  }
+}
+
+@media (max-width: 380px) {
+  .infoCard {
+    padding: 18px;
+  }
+
+  .episode {
+    align-items: start;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .youtubeLink,
+  .episodeLink {
+    transition: none;
+  }
+}

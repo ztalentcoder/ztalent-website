@@ -10,13 +10,15 @@ const resourceFolders = Object.freeze({
   projects: 'projects',
   'blog-posts': 'blog',
   'team-members': 'team',
+  'academic-courses': 'courses',
+  'course-categories': 'course-categories',
 });
 const formatExtensions = Object.freeze({ jpeg: 'jpg', png: 'png', webp: 'webp' });
 const filenamePattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.(?:jpg|png|webp)$/;
 
 function parseManagedUrl(url) {
   if (typeof url !== 'string') return null;
-  const match = /^\/uploads\/images\/(company|business-areas|projects|blog|team)\/([0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.(?:jpg|png|webp))$/.exec(url);
+  const match = /^\/uploads\/images\/(company|business-areas|projects|blog|team|courses|course-categories)\/([0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.(?:jpg|png|webp))$/.exec(url);
   return match ? { folder: match[1], filename: match[2] } : null;
 }
 

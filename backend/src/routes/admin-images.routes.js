@@ -17,6 +17,8 @@ const IMAGE_RESOURCES = new Set([
   'projects',
   'blog-posts',
   'team-members',
+  'academic-courses',
+  'course-categories',
 ]);
 const imageUpload = multer({
   storage: multer.memoryStorage(),
@@ -71,6 +73,8 @@ async function isImageReferenced(prisma, url) {
     prisma.project.findFirst({ where: { imageUrl: url }, select: { id: true } }),
     prisma.blogPost.findFirst({ where: { coverImageUrl: url }, select: { id: true } }),
     prisma.teamMember.findFirst({ where: { photoUrl: url }, select: { id: true } }),
+    prisma.academicCourse.findFirst({ where: { imageUrl: url }, select: { id: true } }),
+    prisma.courseCategory.findFirst({ where: { imageUrl: url }, select: { id: true } }),
   ]);
   return references.some(Boolean);
 }
@@ -159,7 +163,7 @@ export function createAdminImagesRouter({
 export function createPublicImagesRouter({ imageStorage = createImageStorage() } = {}) {
   const router = Router();
   router.use((request, _response, next) => {
-    if (!/^\/(?:company|business-areas|projects|blog|team)\/[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.(?:jpg|png|webp)$/.test(request.path)) {
+    if (!/^\/(?:company|business-areas|projects|blog|team|courses|course-categories)\/[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.(?:jpg|png|webp)$/.test(request.path)) {
       next(new HttpError(404, 'NOT_FOUND', 'The requested image was not found.'));
       return;
     }

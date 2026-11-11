@@ -2,6 +2,9 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import ImageUploadField from '../../components/admin/ImageUploadField.jsx';
 import AdminConfirmationDialog from '../../components/admin/AdminConfirmationDialog.jsx';
+import ServiceIcon from '../../components/common/ServiceIcon.jsx';
+import useAutoDismissNotice from '../../hooks/useAutoDismissNotice.js';
+import AcademicCourseManager from './AcademicCourseManager.jsx';
 import AboutPageEditor from './AboutPageEditor.jsx';
 import {
   createAdminContent,
@@ -33,8 +36,13 @@ function formatCell(value) {
     const date = new Date(value);
     return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleString();
   }
+  if (Array.isArray(value)) return value.join(', ') || '—';
   if (typeof value === 'object') return JSON.stringify(value);
   return String(value);
+}
+
+function getNestedValue(item, path) {
+  return path.split('.').reduce((value, part) => value?.[part], item);
 }
 
 async function cleanupImages(urls) {
@@ -45,7 +53,7 @@ async function cleanupImages(urls) {
   return failures.length;
 }
 
-export default function AdminContentPage({ resource: requestedResource }) {
+export default function AdminContentPage({ resource: requestedResource, scopeTechSolutions = false }) {
   const { resource: routeResource } = useParams();
   const resource = requestedResource ?? routeResource;
   const definition = contentResources[resource];
@@ -53,6 +61,7 @@ export default function AdminContentPage({ resource: requestedResource }) {
 
   if (isCompanyProfile) return <CompanyProfileEditor />;
   if (resource === 'about-page') return <AboutPageEditor />;
+  if (resource === 'academic-courses') return <AcademicCourseManager />;
   if (!definition) {
     return (
       <section className={styles.page}>
@@ -62,10 +71,20 @@ export default function AdminContentPage({ resource: requestedResource }) {
     );
   }
 
-  return <ResourceManager key={resource} resource={resource} definition={definition} />;
+  return (
+    <ResourceManager
+      key={`${resource}-${scopeTechSolutions ? 'tech-solutions' : 'all'}`}
+      resource={resource}
+      definition={definition}
+      scopeTechSolutions={scopeTechSolutions}
+    />
+  );
 }
 
-function ResourceManager({ resource, definition }) {
+function ResourceManager({ resource, definition, scopeTechSolutions }) {
+  const resourceTitle = scopeTechSolutions
+    ? resource === 'business-areas' ? 'Tech Solutions Categories' : 'Tech Solutions Services'
+    : definition.title;
   const [items, setItems] = useState([]);
   const [pagination, setPagination] = useState({ page: 1, total: 0, pageCount: 1 });
   const [page, setPage] = useState(1);
@@ -80,7 +99,7 @@ function ResourceManager({ resource, definition }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
-  const [notice, setNotice] = useState('');
+  const [notice, setNotice] = useAutoDismissNotice();
   const [relationOptions, setRelationOptions] = useState({});
   const [imageFiles, setImageFiles] = useState({});
   const [imageProgress, setImageProgress] = useState({});
@@ -97,6 +116,7 @@ function ResourceManager({ resource, definition }) {
         pageSize,
         search,
         ...(filterName && filterValue ? { [filterName]: filterValue } : {}),
+        ...(scopeTechSolutions ? { techSolutions: true } : {}),
       });
       setItems(response.items ?? []);
       setPagination(response.pagination ?? { page, total: 0, pageCount: 1 });
@@ -105,7 +125,7 @@ function ResourceManager({ resource, definition }) {
     } finally {
       setLoading(false);
     }
-  }, [resource, page, search, filterName, filterValue]);
+  }, [resource, page, search, filterName, filterValue, scopeTechSolutions]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => void loadItems(), 250);
@@ -118,7 +138,11 @@ function ResourceManager({ resource, definition }) {
       .map((field) => field.relation?.resource)
       .filter(Boolean))];
     Promise.all(relations.map(async (relation) => {
-      const response = await listAdminContent(relation, { page: 1, pageSize: 100 });
+      const response = await listAdminContent(relation, {
+        page: 1,
+        pageSize: 100,
+        ...(scopeTechSolutions && relation === 'business-areas' ? { techSolutions: true } : {}),
+      });
       return [relation, response.items ?? []];
     })).then((entries) => {
       if (active) setRelationOptions(Object.fromEntries(entries));
@@ -126,13 +150,14 @@ function ResourceManager({ resource, definition }) {
       if (active) setError(getErrorMessage(requestError));
     });
     return () => { active = false; };
-  }, [definition]);
+  }, [definition, scopeTechSolutions]);
 
   function startCreate() {
     const initial = Object.fromEntries(definition.fields.map((field) => [
       field.name,
-      field.defaultValue ?? (field.type === 'checkbox' ? false : ''),
+      field.defaultValue ?? (field.type === 'checkbox' || field.type === 'hidden' ? false : ''),
     ]));
+    if (scopeTechSolutions && resource === 'business-areas') initial.isTechSolution = true;
     setForm(initial);
     setImageFiles({});
     setImageProgress({});
@@ -146,11 +171,15 @@ function ResourceManager({ resource, definition }) {
     setError('');
     setNotice('');
     try {
-      const response = await getAdminContent(resource, item.id);
+      const response = scopeTechSolutions
+        ? await getAdminContent(resource, item.id, { techSolutions: true })
+        : await getAdminContent(resource, item.id);
       setSelected(response.item);
       setForm(Object.fromEntries(definition.fields.map((field) => [
         field.name,
-        response.item[field.name] ?? field.defaultValue ?? (field.type === 'checkbox' ? false : ''),
+        field.type === 'stringArray' && Array.isArray(response.item[field.name])
+          ? response.item[field.name].join('\n')
+          : response.item[field.name] ?? field.defaultValue ?? (field.type === 'checkbox' || field.type === 'hidden' ? false : ''),
       ])));
       setImageFiles({});
       setImageProgress({});
@@ -172,6 +201,8 @@ function ResourceManager({ resource, definition }) {
         ? (value === '' ? null : Number(value))
         : field.type === 'checkbox'
           ? Boolean(value)
+          : field.type === 'stringArray'
+            ? (Array.isArray(value) ? value : String(value ?? '').split(/\r?\n/).map((entry) => entry.trim()).filter(Boolean))
           : value === '' && !field.required
             ? null
             : value;
@@ -195,9 +226,11 @@ function ResourceManager({ resource, definition }) {
         await updateContactMessageStatus(selected.id, body.status);
         window.dispatchEvent(new Event('admin-contact-messages-updated'));
       } else if (formMode === 'create') {
-        await createAdminContent(resource, body);
+        if (scopeTechSolutions) await createAdminContent(resource, body, { techSolutions: true });
+        else await createAdminContent(resource, body);
       } else {
-        await updateAdminContent(resource, selected.id, body);
+        if (scopeTechSolutions) await updateAdminContent(resource, selected.id, body, { techSolutions: true });
+        else await updateAdminContent(resource, selected.id, body);
       }
       cmsSaved = true;
 
@@ -231,7 +264,8 @@ function ResourceManager({ resource, definition }) {
     setError('');
     setNotice('');
     try {
-      await deleteAdminContent(resource, item.id);
+      if (scopeTechSolutions) await deleteAdminContent(resource, item.id, { techSolutions: true });
+      else await deleteAdminContent(resource, item.id);
       const imageUrls = definition.fields
         .filter((field) => field.type === 'image')
         .map((field) => item[field.name])
@@ -262,7 +296,7 @@ function ResourceManager({ resource, definition }) {
       <div className={styles.heading}>
         <div>
           <p className={styles.eyebrow}>Content management</p>
-          <h1>{definition.title}</h1>
+          <h1>{resourceTitle}</h1>
           <p>{resource === 'site-statistics'
             ? 'Edit statistic headings, descriptions, order, and visibility. Project and course totals are automatic; only institution and student values are editable.'
             : 'Manage website content and publication state.'}</p>
@@ -288,7 +322,7 @@ function ResourceManager({ resource, definition }) {
             }}>Cancel</button>
           </div>
           <div className={styles.fields}>
-            {definition.fields.filter((field) => !field.readOnly && !isAutomaticStatistic(field)).map((field) => (
+            {definition.fields.filter((field) => field.type !== 'hidden' && !field.readOnly && !isAutomaticStatistic(field)).map((field) => (
               <FormField
                 key={field.name}
                 field={resource === 'team-members' && field.name === 'photoUrl'
@@ -316,10 +350,10 @@ function ResourceManager({ resource, definition }) {
 
       <div className={styles.toolbar}>
         <label>
-          <span className={styles.srOnly}>Search {definition.title}</span>
+          <span className={styles.srOnly}>Search {resourceTitle}</span>
           <input
             type="search"
-            placeholder={`Search ${definition.title.toLowerCase()}…`}
+            placeholder={`Search ${resourceTitle.toLowerCase()}…`}
             value={search}
             onChange={(event) => {
               setPage(1);
@@ -360,26 +394,28 @@ function ResourceManager({ resource, definition }) {
 
       <div
         className={styles.tableWrap}
-        aria-label={`${definition.title} results`}
+        aria-label={`${resourceTitle} results`}
         aria-busy={loading}
         tabIndex={0}
       >
         {loading ? (
-          <p className={styles.state} role="status">Loading {definition.title.toLowerCase()}…</p>
+          <p className={styles.state} role="status">Loading {resourceTitle.toLowerCase()}…</p>
         ) : items.length === 0 ? (
-          <p className={styles.state}>No {definition.title.toLowerCase()} found.</p>
+          <p className={styles.state}>No {resourceTitle.toLowerCase()} found.</p>
         ) : (
           <table>
             <thead>
               <tr>
-                {definition.columns.map((column) => <th key={column}>{column.replace(/[A-Z]/g, (letter) => ` ${letter.toLowerCase()}`)}</th>)}
+                {definition.columns.map((column) => (
+                  <th key={column}>{definition.columnLabels?.[column] ?? column.replace(/[A-Z]/g, (letter) => ` ${letter.toLowerCase()}`)}</th>
+                ))}
                 <th scope="col">Actions</th>
               </tr>
             </thead>
             <tbody>
               {items.map((item) => (
                 <tr key={item.id}>
-                  {definition.columns.map((column) => <td key={column}>{formatCell(item[column])}</td>)}
+                  {definition.columns.map((column) => <td key={column}>{formatCell(getNestedValue(item, column))}</td>)}
                   <td className={styles.actions}>
                     <button className={styles.textButton} type="button" onClick={() => startEdit(item)}>
                       {definition.readOnly ? 'View / update' : 'Edit'}
@@ -467,7 +503,7 @@ function FormField({ field, value, onChange, options, file, onFileChange, upload
   return (
     <label className={styles.field} htmlFor={id}>
       {field.label}
-      {field.type === 'textarea' ? (
+      {field.type === 'textarea' || field.type === 'stringArray' ? (
         <textarea
           id={id}
           required={field.required}
@@ -476,6 +512,13 @@ function FormField({ field, value, onChange, options, file, onFileChange, upload
           onChange={(event) => onChange(event.target.value)}
           rows={field.name === 'body' || field.name === 'description' ? 8 : 4}
         />
+      ) : field.type === 'serviceIcon' ? (
+        <span className={styles.iconSelect}>
+          <ServiceIcon name={value} />
+          <select id={id} required={field.required} value={value ?? ''} onChange={(event) => onChange(event.target.value)}>
+            {(options ?? field.options).map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+          </select>
+        </span>
       ) : field.type === 'select' || field.relation ? (
         <select id={id} required={field.required} value={value ?? ''} onChange={(event) => onChange(event.target.value)}>
           <option value="">Select…</option>
@@ -493,6 +536,7 @@ function FormField({ field, value, onChange, options, file, onFileChange, upload
           onChange={(event) => onChange(event.target.value)}
         />
       )}
+      {field.hint && <small>{field.hint}</small>}
     </label>
   );
 }
@@ -507,7 +551,7 @@ function CompanyProfileEditor() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
-  const [notice, setNotice] = useState('');
+  const [notice, setNotice] = useAutoDismissNotice();
   const [logoFile, setLogoFile] = useState(null);
   const [logoProgress, setLogoProgress] = useState(null);
   const [homeIntroImageFile, setHomeIntroImageFile] = useState(null);
