@@ -42,7 +42,7 @@
   border-radius: 999px;
   padding: 5px 11px;
   background: var(--soft);
-  color: var(--deep-blue);
+  color: var(--link-color);
   font-size: 0.78rem;
   font-weight: 700;
   text-transform: capitalize;
@@ -143,7 +143,7 @@
 
 .eyebrow {
   margin-bottom: 5px;
-  color: var(--deep-blue);
+  color: var(--link-color);
   font-size: 0.74rem;
   font-weight: 800;
   letter-spacing: 0.1em;
@@ -172,7 +172,7 @@
   place-items: center;
   border-radius: 12px;
   background: var(--soft);
-  color: var(--deep-blue);
+  color: var(--link-color);
   font-size: 0.85rem;
   font-weight: 800;
 }
@@ -206,7 +206,7 @@
 }
 
 .returnLink a {
-  color: var(--deep-blue);
+  color: var(--link-color);
   font-weight: 700;
   text-decoration: none;
 }

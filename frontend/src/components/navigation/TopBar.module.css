@@ -1,6 +1,6 @@
 .top {
-  background: #051728;
-  color: #a9c4e0;
+  background: var(--footer);
+  color: var(--footer-text);
   font-size: 0.81rem;
 }
 

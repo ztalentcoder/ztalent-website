@@ -1,0 +1,113 @@
+.articleBody {
+  color: var(--ink);
+  font-size: 1.05rem;
+  line-height: 1.85;
+  overflow-wrap: anywhere;
+}
+
+.articleBody > * + * {
+  margin-top: 1.35rem;
+}
+
+.articleBody h2,
+.articleBody h3,
+.articleBody h4,
+.articleBody h5,
+.articleBody h6 {
+  color: var(--ink);
+  line-height: 1.3;
+  margin: 2rem 0 0.75rem;
+}
+
+.articleBody a {
+  color: var(--link-color);
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+}
+
+.articleBody blockquote {
+  border-left: 4px solid var(--blue);
+  color: var(--ink);
+  margin-left: 0;
+  padding: 0.25rem 0 0.25rem 1.25rem;
+}
+
+.articleBody ul,
+.articleBody ol {
+  padding-left: 1.5rem;
+}
+
+.articleBody li + li {
+  margin-top: 0.35rem;
+}
+
+.articleBody hr {
+  border: 0;
+  border-top: 1px solid var(--line);
+}
+
+.inlineImage {
+  border-radius: 0.75rem;
+  display: block;
+  height: auto;
+  margin: 1.5rem auto;
+  max-height: 42rem;
+  max-width: 100%;
+  object-fit: contain;
+}
+
+.articleBody :not(.codeBlock) > code {
+  background: var(--soft);
+  color: var(--ink);
+  border-radius: 0.25rem;
+  font-size: 0.92em;
+  padding: 0.1em 0.35em;
+}
+
+.codeBlock {
+  background: #101828;
+  border-radius: 0.75rem;
+  color: #f2f4f7;
+  margin: 1.5rem 0;
+  overflow: hidden;
+}
+
+.codeHeader {
+  align-items: center;
+  background: #1d2939;
+  display: flex;
+  font-size: 0.8rem;
+  justify-content: space-between;
+  padding: 0.6rem 1rem;
+}
+
+.codeActions {
+  align-items: center;
+  display: inline-flex;
+  gap: 0.6rem;
+}
+
+.codeActions [role='alert'] {
+  color: #fda29b;
+}
+
+.codeHeader button {
+  background: transparent;
+  border: 1px solid #667085;
+  border-radius: 0.4rem;
+  color: inherit;
+  cursor: pointer;
+  padding: 0.3rem 0.55rem;
+}
+
+.codeBlock pre {
+  margin: 0;
+  overflow-x: auto;
+  padding: 1rem;
+}
+
+.codeBlock pre code {
+  font-family: Consolas, 'Courier New', monospace;
+  font-size: 0.9rem;
+  white-space: pre;
+}

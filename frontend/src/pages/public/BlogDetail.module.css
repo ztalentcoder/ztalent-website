@@ -1,0 +1,354 @@
+.backLink {
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--ink);
+  display: inline-flex;
+  font-size: 0.9rem;
+  font-weight: 700;
+  gap: 0.5rem;
+  margin: 1.5rem 0 2rem;
+  min-height: 42px;
+  padding: 0.55rem 0.9rem;
+  text-decoration: none;
+  transition: background-color 140ms ease, border-color 140ms ease;
+}
+
+.backLink:hover {
+  border-color: var(--blue);
+  background: var(--soft);
+}
+
+.backLink:focus-visible {
+  outline: 3px solid var(--blue);
+  outline-offset: 3px;
+}
+
+.article {
+  min-width: 0;
+}
+
+.articleHeader {
+  border-bottom: 1px solid var(--line);
+  padding: 30px 0 54px;
+  background:
+    radial-gradient(circle at 84% 8%, rgb(30 144 232 / 12%), transparent 36%),
+    var(--soft);
+}
+
+.articleHeaderInner {
+  margin: 0 auto;
+  width: min(980px, calc(100% - 44px));
+  text-align: center;
+}
+
+.breadcrumb {
+  color: var(--muted);
+  font-size: 0.84rem;
+  text-align: left;
+}
+
+.breadcrumb ol {
+  align-items: baseline;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem 0;
+  list-style: none;
+  padding: 0;
+}
+
+.breadcrumb li {
+  min-width: 0;
+}
+
+.breadcrumb li + li::before {
+  color: var(--muted);
+  content: "/";
+  margin: 0 0.6rem;
+}
+
+.breadcrumb li:last-child {
+  overflow-wrap: anywhere;
+}
+
+.breadcrumb a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.breadcrumb a:hover {
+  color: var(--link-color);
+  text-decoration: underline;
+  text-underline-offset: 0.16em;
+}
+
+.category {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  display: inline-flex;
+  margin-bottom: 1rem;
+  padding: 0.28rem 0.8rem;
+  background: var(--card);
+  color: var(--link-color);
+  font-size: 0.78rem;
+  font-weight: 750;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+}
+
+.articleTitle {
+  color: var(--ink);
+  font-size: clamp(2.1rem, 5.2vw, 3.75rem);
+  letter-spacing: -0.04em;
+  line-height: 1.12;
+  margin: 0 auto 1rem;
+  max-width: 1000px;
+  overflow-wrap: anywhere;
+  text-wrap: balance;
+}
+
+.articleExcerpt {
+  color: var(--muted);
+  font-size: clamp(1.05rem, 2vw, 1.25rem);
+  line-height: 1.75;
+  margin: 0 auto;
+  max-width: 760px;
+}
+
+.articleSection {
+  padding: clamp(44px, 6vw, 76px) 0;
+}
+
+.metadata {
+  align-items: center;
+  color: var(--muted);
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 0.9rem;
+  gap: 0.75rem 1.5rem;
+  justify-content: center;
+  list-style: none;
+  margin: 1.65rem 0 0;
+  padding: 0;
+}
+
+.metadata li {
+  align-items: center;
+  display: inline-flex;
+  gap: 0.5rem;
+}
+
+.metadata svg {
+  color: var(--link-color);
+  flex: 0 0 auto;
+}
+
+.coverWrap {
+  margin: 44px auto 0;
+  width: min(1120px, calc(100% - 44px));
+}
+
+.cover {
+  background: var(--soft);
+  border: 1px solid var(--line);
+  border-radius: 1.25rem;
+  box-shadow: var(--shadow);
+  max-height: 640px;
+  overflow: hidden;
+  aspect-ratio: 16 / 9;
+}
+
+.cover img {
+  display: block;
+  height: 100%;
+  object-fit: cover;
+  width: 100%;
+}
+
+.imageFallback {
+  align-items: center;
+  color: var(--muted);
+  display: flex;
+  justify-content: center;
+  min-height: 180px;
+  aspect-ratio: 16 / 9;
+  background:
+    radial-gradient(circle at 80% 18%, rgb(30 144 232 / 16%), transparent 36%),
+    linear-gradient(135deg, var(--soft), var(--card));
+}
+
+.articleContent {
+  margin: 0 auto;
+  max-width: 760px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  width: 100%;
+}
+
+.articleContent > div {
+  color: var(--ink);
+  font-size: clamp(1rem, 1.2vw, 1.1rem);
+  line-height: 1.9;
+}
+
+.articleContent h1,
+.articleContent h2,
+.articleContent h3,
+.articleContent h4,
+.articleContent h5,
+.articleContent h6 {
+  color: var(--ink);
+  line-height: 1.3;
+  margin: 2.4rem 0 0.9rem;
+  overflow-wrap: anywhere;
+}
+
+.articleContent h1,
+.articleContent h2 {
+  font-size: clamp(1.6rem, 3.2vw, 2.1rem);
+}
+
+.articleContent h3 {
+  font-size: clamp(1.3rem, 2.5vw, 1.65rem);
+}
+
+.articleContent h4,
+.articleContent h5,
+.articleContent h6 {
+  font-size: 1.15rem;
+}
+
+.articleContent p,
+.articleContent ul,
+.articleContent ol,
+.articleContent blockquote {
+  margin-bottom: 1.4rem;
+}
+
+.articleContent ul,
+.articleContent ol {
+  padding-left: 1.5rem;
+}
+
+.articleContent li + li {
+  margin-top: 0.45rem;
+}
+
+.articleContent blockquote {
+  border-left: 4px solid var(--blue);
+  border-radius: 0 0.8rem 0.8rem 0;
+  margin-left: 0;
+  padding: 1rem 1.25rem;
+  background: var(--soft);
+  color: var(--ink);
+}
+
+.articleContent a {
+  color: var(--link-color);
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+}
+
+.articleContent img {
+  border-radius: 0.75rem;
+  display: block;
+  height: auto;
+  margin: 2rem auto;
+  max-height: 42rem;
+  max-width: 100%;
+  object-fit: contain;
+}
+
+.articleContent pre {
+  max-width: 100%;
+}
+
+.articleContent pre code {
+  overflow-wrap: normal;
+}
+
+.relatedHeading {
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.relatedHeading h2 {
+  font-size: clamp(1.5rem, 3vw, 2rem);
+}
+
+.relatedImage {
+  display: block;
+  margin-bottom: 1rem;
+  overflow: hidden;
+}
+
+.relatedImage img {
+  aspect-ratio: 16 / 9;
+  display: block;
+  object-fit: cover;
+  width: 100%;
+}
+
+@media (max-width: 600px) {
+  .backLink {
+    font-size: 0.84rem;
+    margin: 1.25rem 0 1.5rem;
+    min-height: 40px;
+  }
+
+  .articleHeader {
+    padding: 24px 0 38px;
+  }
+
+  .articleHeaderInner {
+    width: calc(100% - 36px);
+  }
+
+  .breadcrumb {
+    font-size: 0.78rem;
+  }
+
+  .articleTitle {
+    font-size: clamp(2rem, 8vw, 2.65rem);
+  }
+
+  .metadata {
+    gap: 0.7rem 1rem;
+    font-size: 0.84rem;
+  }
+
+  .coverWrap {
+    margin-top: 30px;
+    width: calc(100% - 36px);
+  }
+
+  .cover {
+    border-radius: 0.9rem;
+    aspect-ratio: 4 / 3;
+  }
+
+  .imageFallback {
+    aspect-ratio: 4 / 3;
+  }
+
+  .articleContent > div {
+    font-size: 1rem;
+    line-height: 1.82;
+  }
+
+  .articleContent h1,
+  .articleContent h2,
+  .articleContent h3,
+  .articleContent h4,
+  .articleContent h5,
+  .articleContent h6 {
+    margin-top: 2rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .backLink {
+    transition: none;
+  }
+}

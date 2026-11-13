@@ -71,7 +71,11 @@ async function isImageReferenced(prisma, url) {
     prisma.companyProfile.findFirst({ where: { homeIntroImageUrl: url }, select: { id: true } }),
     prisma.businessArea.findFirst({ where: { imageUrl: url }, select: { id: true } }),
     prisma.project.findFirst({ where: { imageUrl: url }, select: { id: true } }),
-    prisma.blogPost.findFirst({ where: { coverImageUrl: url }, select: { id: true } }),
+    prisma.project.findFirst({ where: { galleryImages: { some: { imageUrl: url } } }, select: { id: true } }),
+    prisma.blogPost.findFirst({
+      where: { OR: [{ coverImageUrl: url }, { body: { contains: url } }] },
+      select: { id: true },
+    }),
     prisma.teamMember.findFirst({ where: { photoUrl: url }, select: { id: true } }),
     prisma.academicCourse.findFirst({ where: { imageUrl: url }, select: { id: true } }),
     prisma.courseCategory.findFirst({ where: { imageUrl: url }, select: { id: true } }),

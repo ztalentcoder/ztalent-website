@@ -5,7 +5,22 @@ import { DEFAULT_ABOUT_PAGE_CONTENT, serializePublicAboutPage } from '../service
 const MAX_PAGE = 1_000_000;
 const MAX_PAGE_SIZE = 50;
 const DEFAULT_PAGE_SIZE = 12;
-const SERVICE_ICONS = new Set(['code', 'smartphone', 'layers', 'palette', 'database', 'plug', 'brain', 'workflow', 'settings', 'life-buoy']);
+const SERVICE_ICONS = new Set([
+  'code',
+  'smartphone',
+  'layers',
+  'palette',
+  'database',
+  'plug',
+  'brain',
+  'workflow',
+  'settings',
+  'life-buoy',
+  'chart-no-axes-combined',
+  'layout-dashboard',
+  'brain-circuit',
+  'trending-up',
+]);
 
 function badRequest(message = 'Request contains invalid query parameters.') {
   return new HttpError(400, 'VALIDATION_ERROR', message);
@@ -119,6 +134,9 @@ function serializeService(service) {
     businessArea: service.businessArea?.status === 'PUBLISHED'
       ? { slug: service.businessArea.slug, name: service.businessArea.name }
       : null,
+    category: service.serviceCategory?.status === 'PUBLISHED'
+      ? { slug: service.serviceCategory.slug, name: service.serviceCategory.name }
+      : null,
   };
 }
 
@@ -133,6 +151,20 @@ function serializeProject(project) {
     businessArea: project.businessArea?.status === 'PUBLISHED'
       ? { slug: project.businessArea.slug, name: project.businessArea.name }
       : null,
+  };
+}
+
+function serializeProjectDetails(project) {
+  return {
+    ...serializeProject(project),
+    description: project.description,
+    problemStatement: project.problemStatement,
+    solution: project.solution,
+    keyFeatures: (project.keyFeatures ?? []).map(({ title, description }) => ({ title, description })),
+    technologies: project.technologies ?? [],
+    outcome: project.outcome,
+    galleryImages: (project.galleryImages ?? []).map(({ imageUrl }) => imageUrl),
+    liveUrl: project.liveUrl,
   };
 }
 
@@ -179,10 +211,42 @@ function serializeBlogPost(post) {
     excerpt: post.excerpt,
     body: post.body,
     coverImageUrl: post.coverImageUrl,
+    coverImageAlt: post.coverImageAlt,
+    author: post.author,
+    readingTimeMinutes: post.readingTimeMinutes ?? estimateReadingTime(post.body),
+    seoTitle: post.seoTitle,
+    metaDescription: post.metaDescription,
     publishedAt: post.publishedAt,
+    updatedAt: post.updatedAt,
     category: { slug: post.category.slug, name: post.category.name },
   };
 }
+
+function estimateReadingTime(body) {
+  const wordCount = body.trim().split(/\s+/).filter(Boolean).length;
+  return Math.max(1, Math.ceil(wordCount / 200));
+}
+
+function parseBlogSearch(value) {
+  if (typeof value !== 'string' || value.length > 100) throw badRequest();
+  return value.trim();
+}
+
+const publicBlogPostSelect = {
+  slug: true,
+  title: true,
+  excerpt: true,
+  body: true,
+  coverImageUrl: true,
+  coverImageAlt: true,
+  author: true,
+  readingTimeMinutes: true,
+  seoTitle: true,
+  metaDescription: true,
+  publishedAt: true,
+  updatedAt: true,
+  category: { select: { slug: true, name: true } },
+};
 
 function serializeTeamMember(member) {
   return {
@@ -357,9 +421,14 @@ export function createPublicContentRouter() {
       icon: true,
       keyFeatures: true,
       businessArea: { select: { slug: true, name: true, status: true } },
+      serviceCategory: { select: { slug: true, name: true, status: true } },
     },
     serialize: serializeService,
-    where: () => ({ status: 'PUBLISHED', businessArea: { status: 'PUBLISHED' } }),
+    where: () => ({
+      status: 'PUBLISHED',
+      businessArea: { status: 'PUBLISHED' },
+      OR: [{ serviceCategoryId: null }, { serviceCategory: { status: 'PUBLISHED' } }],
+    }),
     orderBy: [{ sortOrder: 'asc' }, { title: 'asc' }],
     allowedFilters: ['businessArea'],
     filterWhere: (query) => query.businessArea
@@ -380,7 +449,7 @@ export function createPublicContentRouter() {
     },
     serialize: serializeProject,
     where: () => ({ status: 'PUBLISHED' }),
-    orderBy: [{ publishedAt: 'desc' }, { createdAt: 'desc' }],
+    orderBy: [{ sortOrder: 'asc' }, { publishedAt: 'desc' }, { createdAt: 'desc' }],
     allowedFilters: ['businessArea'],
     filterWhere: (query) => query.businessArea
       ? { businessArea: { slug: parseFilterSlug(query.businessArea), status: 'PUBLISHED' } }
@@ -396,8 +465,21 @@ export function createPublicContentRouter() {
       imageUrl: true,
       publishedAt: true,
       businessArea: { select: { slug: true, name: true, status: true } },
+      problemStatement: true,
+      solution: true,
+      outcome: true,
+      liveUrl: true,
+      technologies: true,
+      keyFeatures: {
+        select: { title: true, description: true, sortOrder: true },
+        orderBy: { sortOrder: 'asc' },
+      },
+      galleryImages: {
+        select: { imageUrl: true, sortOrder: true },
+        orderBy: { sortOrder: 'asc' },
+      },
     },
-    serialize: serializeProject,
+    serialize: serializeProjectDetails,
     where: () => ({ status: 'PUBLISHED' }),
   });
 
@@ -508,44 +590,85 @@ export function createPublicContentRouter() {
 
   createListRoute(router, 'blog-categories', {
     modelName: 'blogCategory',
-    select: { slug: true, name: true, description: true },
-    serialize: ({ slug, name, description }) => ({ slug, name, description }),
-    where: () => ({ posts: { some: { status: 'PUBLISHED' } } }),
-    orderBy: { name: 'asc' },
+    select: {
+      slug: true,
+      name: true,
+      description: true,
+      _count: { select: { posts: { where: { status: 'PUBLISHED' } } } },
+    },
+    serialize: ({ slug, name, description, _count }) => ({
+      slug,
+      name,
+      description,
+      postCount: _count.posts,
+    }),
+    where: () => ({
+      status: 'PUBLISHED',
+      posts: { some: { status: 'PUBLISHED' } },
+    }),
+    orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
   });
   createListRoute(router, 'blog-posts', {
     modelName: 'blogPost',
-    select: {
-      slug: true,
-      title: true,
-      excerpt: true,
-      body: true,
-      coverImageUrl: true,
-      publishedAt: true,
-      category: { select: { slug: true, name: true } },
-    },
+    select: publicBlogPostSelect,
     serialize: serializeBlogPost,
-    where: () => ({ status: 'PUBLISHED' }),
+    where: () => ({
+      status: 'PUBLISHED',
+      category: { status: 'PUBLISHED' },
+    }),
     orderBy: [{ publishedAt: 'desc' }, { createdAt: 'desc' }],
-    allowedFilters: ['category'],
-    filterWhere: (query) => query.category
-      ? { category: { slug: parseFilterSlug(query.category), posts: { some: { status: 'PUBLISHED' } } } }
-      : {},
-  });
-  createDetailRoute(router, 'blog-posts', {
-    modelName: 'blogPost',
-    select: {
-      slug: true,
-      title: true,
-      excerpt: true,
-      body: true,
-      coverImageUrl: true,
-      publishedAt: true,
-      category: { select: { slug: true, name: true } },
+    allowedFilters: ['category', 'search'],
+    filterWhere: (query) => {
+      const filters = {};
+      if (query.category) {
+        filters.category = {
+          slug: parseFilterSlug(query.category),
+          status: 'PUBLISHED',
+        };
+      }
+      if (query.search !== undefined) {
+        const search = parseBlogSearch(query.search);
+        if (search) {
+          filters.OR = ['title', 'excerpt', 'body'].map((field) => ({
+            [field]: { contains: search, mode: 'insensitive' },
+          }));
+        }
+      }
+      return filters;
     },
-    serialize: serializeBlogPost,
-    where: () => ({ status: 'PUBLISHED' }),
   });
+  router.get('/blog-posts/:slug', safely(async (request, response) => {
+    const slug = parseSlug(request.params.slug);
+    const prisma = request.app.locals.prisma;
+    const post = await prisma.blogPost.findFirst({
+      where: {
+        status: 'PUBLISHED',
+        category: { status: 'PUBLISHED' },
+        slug,
+      },
+      select: { ...publicBlogPostSelect, categoryId: true },
+    });
+    if (!post) throw publicNotFound();
+
+    const relatedPosts = await prisma.blogPost.findMany({
+      where: {
+        status: 'PUBLISHED',
+        category: { status: 'PUBLISHED' },
+        categoryId: post.categoryId,
+        slug: { not: post.slug },
+      },
+      select: publicBlogPostSelect,
+      orderBy: [{ publishedAt: 'desc' }, { createdAt: 'desc' }],
+      take: 3,
+    });
+    response.json({
+      status: 'success',
+      item: {
+        ...serializeBlogPost(post),
+        relatedPosts: relatedPosts.map(serializeBlogPost),
+      },
+    });
+  }));
 
   createListRoute(router, 'team-members', {
     modelName: 'teamMember',

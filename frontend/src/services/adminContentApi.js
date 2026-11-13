@@ -59,6 +59,10 @@ export function updateAdminContent(resource, id, body, query) {
   return request(`${resource}/${encodeURIComponent(id)}`, { method: 'PUT', body, query });
 }
 
+export function patchAdminContent(resource, id, body, query) {
+  return request(`${resource}/${encodeURIComponent(id)}`, { method: 'PATCH', body, query });
+}
+
 export function deleteAdminContent(resource, id, query) {
   return request(`${resource}/${encodeURIComponent(id)}`, { method: 'DELETE', query });
 }
@@ -69,6 +73,10 @@ export function getCompanyProfile() {
 
 export function updateCompanyProfile(body) {
   return request('company-profile', { method: 'PUT', body });
+}
+
+export function patchCompanyProfile(body) {
+  return request('company-profile', { method: 'PATCH', body });
 }
 
 export function getAboutPageContent() {

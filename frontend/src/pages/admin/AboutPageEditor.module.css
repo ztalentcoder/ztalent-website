@@ -1,37 +1,192 @@
 .form {
   display: grid;
-  gap: 18px;
+  min-width: 0;
+  gap: 24px;
 }
 
 .section {
+  display: grid;
   min-width: 0;
+  gap: 24px;
   border: 1px solid var(--line);
-  border-radius: 10px;
-  padding: 20px;
+  border-radius: 14px;
+  padding: 26px;
   background: var(--card);
+  box-shadow: 0 4px 14px rgb(8 34 61 / 5%);
 }
 
 .section legend {
-  padding: 0 8px;
+  max-width: 100%;
+  padding: 0 10px;
   color: var(--ink);
   font-size: 1.15rem;
-  font-weight: 700;
+  font-weight: 750;
+}
+
+.sectionDescription {
+  max-width: 760px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 24px 22px;
+}
+
+.form label {
+  gap: 10px;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.form label input,
+.form label select,
+.form label textarea {
+  min-width: 0;
+  line-height: 1.55;
+}
+
+.form label input,
+.form label select {
+  min-height: 46px;
+}
+
+.form label textarea {
+  min-height: 170px;
+  padding: 12px 14px;
+}
+
+.longField {
+  grid-column: 1 / -1;
+}
+
+.longField textarea {
+  min-height: 220px !important;
+}
+
+.settings {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 0.82fr);
+  align-items: center;
+  gap: 20px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  padding: 18px 20px;
+  background: var(--soft);
+}
+
+.settings h3,
+.subsectionHeading h3,
+.collectionHeading h3 {
+  color: var(--ink);
+  font-size: 0.98rem;
+}
+
+.settings p,
+.subsectionHeading p,
+.collectionHeading p,
+.itemHeading p {
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 0.83rem;
+  line-height: 1.55;
+}
+
+.settingsFields {
+  display: grid;
+  grid-template-columns: minmax(100px, 0.65fr) minmax(160px, 1fr);
+  align-items: center;
+  gap: 16px;
+}
+
+.settingsFields .field {
+  min-width: 0;
+}
+
+.settingsFields .checkboxField,
+.itemSettings .checkboxField {
+  min-height: 42px;
+  align-content: center;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 9px 12px;
+  background: var(--card);
+  font-size: 0.84rem;
+}
+
+.settingsFields .checkboxField input,
+.itemSettings .checkboxField input {
+  flex: 0 0 auto;
+  accent-color: var(--admin-action-bg);
+}
+
+.missionGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 22px;
+}
+
+.subsection,
+.relatedFields {
+  display: grid;
+  min-width: 0;
+  gap: 20px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 22px;
+  background: var(--background);
+}
+
+.subsectionHeading,
+.collectionHeading {
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.subsection .fields {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 20px;
+}
+
+.subsection .longField textarea {
+  min-height: 210px !important;
+}
+
+.relatedFields .fields {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.collectionHeading {
+  margin-bottom: -8px;
 }
 
 .items {
   display: grid;
-  gap: 14px;
-  margin-top: 20px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: stretch;
+  gap: 18px;
 }
 
 .item {
+  display: grid;
   min-width: 0;
-  border-top: 1px solid var(--line);
-  padding-top: 16px;
+  align-content: start;
+  gap: 20px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 22px;
+  background: var(--soft);
 }
 
 .itemHeading {
-  margin-bottom: 12px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--line);
   color: var(--deep-blue);
 }
 
@@ -39,22 +194,82 @@
   font-size: 1rem;
 }
 
+.itemFields {
+  display: grid;
+  min-width: 0;
+  gap: 20px;
+}
+
+.itemTopFields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(110px, 0.65fr);
+  align-items: start;
+  gap: 18px;
+}
+
+.itemTopFields label:only-child {
+  grid-column: 1 / -1;
+}
+
+.itemTopFields label:nth-child(3) {
+  grid-column: 1 / -1;
+}
+
+.itemSettings {
+  border-top: 1px solid var(--line);
+  padding-top: 14px;
+}
+
 .actions {
+  position: sticky;
+  z-index: 2;
+  bottom: 12px;
   display: flex;
-  flex-wrap: wrap;
+  min-width: 0;
   align-items: center;
-  gap: 12px;
+  justify-content: space-between;
+  gap: 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 14px 18px;
+  background: var(--card);
+  box-shadow: 0 8px 26px rgb(8 34 61 / 12%);
+}
+
+.actions > p {
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+
+.actionButtons {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 10px;
+}
+
+.actionButtons button {
+  min-height: 42px;
 }
 
 .cancelButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 9px;
   padding: 9px 15px;
-  background: var(--background);
+  background: var(--card);
   color: var(--ink);
   cursor: pointer;
   font: inherit;
   font-weight: 700;
+  transition: background-color 140ms ease, border-color 140ms ease;
+}
+
+.cancelButton:hover:not(:disabled) {
+  border-color: #b7c8db;
+  background: var(--soft);
 }
 
 .cancelButton:disabled {
@@ -62,13 +277,87 @@
   opacity: 0.55;
 }
 
-.cancelButton:focus-visible {
+.cancelButton:focus-visible,
+.actionButtons button:focus-visible {
   outline: 3px solid #7cc0f5;
   outline-offset: 2px;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 860px) {
+  .items {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 720px) {
   .section {
-    padding: 16px 12px;
+    gap: 20px;
+    padding: 20px;
+  }
+
+  .fields,
+  .missionGrid,
+  .settings {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .fields {
+    gap: 20px;
+  }
+
+  .longField {
+    grid-column: auto;
+  }
+
+  .settingsFields {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+  }
+
+  .subsection,
+  .relatedFields,
+  .item {
+    padding: 18px;
+  }
+
+  .actions {
+    position: static;
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .actionButtons {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 420px) {
+  .section {
+    padding: 18px 14px;
+  }
+
+  .itemTopFields,
+  .relatedFields .fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .settingsFields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .actions {
+    padding: 14px;
+  }
+
+  .actionButtons button {
+    padding-right: 8px;
+    padding-left: 8px;
+    font-size: 0.88rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cancelButton {
+    transition: none;
   }
 }

@@ -2,8 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { getPublicImageUrl } from '../../services/publicContentApi.js';
 import styles from './ImageUploadField.module.css';
 
-const MAX_FILE_SIZE = 5 * 1024 * 1024;
-const SUPPORTED_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
+export const MAX_IMAGE_FILE_SIZE = 5 * 1024 * 1024;
+export const SUPPORTED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 
 export default function ImageUploadField({
   field,
@@ -37,11 +37,11 @@ export default function ImageUploadField({
     const selected = event.target.files?.[0];
     event.target.value = '';
     if (!selected) return;
-    if (!SUPPORTED_TYPES.has(selected.type)) {
+    if (!SUPPORTED_IMAGE_TYPES.has(selected.type)) {
       setValidationError('Choose a JPEG, PNG, or WebP image.');
       return;
     }
-    if (selected.size > MAX_FILE_SIZE) {
+    if (selected.size > MAX_IMAGE_FILE_SIZE) {
       setValidationError('Images must be 5 MB or smaller.');
       return;
     }

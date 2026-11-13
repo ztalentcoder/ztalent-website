@@ -13,11 +13,19 @@
 
   --navy: #08223d;
   --blue: #1e90e8;
+  --blue-action: #167bc9;
+  --blue-action-hover: #1267a9;
   --deep-blue: #12408a;
+  --link-color: #12408a;
+  --teal: #087c91;
   --background: #ffffff;
   --ink: #0b2342;
   --muted: #52667e;
   --soft: #eef5fc;
+  --soft-hover: #f9fcfc;
+  --soft-accent: #e7f4f2;
+  --soft-blue: #eaf3fb;
+  --line-strong: #c3d5df;
   --card: #ffffff;
   --line: #d9e5f2;
   --shadow: 0 12px 34px rgb(8 34 61 / 10%);
@@ -32,17 +40,32 @@
   --admin-danger: #8d1c13;
   --admin-success-bg: #eaf8f0;
   --admin-success: #12643f;
+  --youtube: #b42318;
+  --youtube-hover: #8f1b13;
+  --youtube-soft: #fff1f0;
+  --youtube-border: #f0c5c1;
 }
 
 :root[data-theme="dark"] {
   color-scheme: dark;
+  --navy: #05172b;
+  --blue-action: #176ba8;
+  --blue-action-hover: #1c7dbe;
+  --link-color: #8ecaff;
+  --teal: #65d5d3;
   --background: #061a31;
   --ink: #eaf2fb;
   --muted: #a9bdd4;
   --soft: #0a2342;
+  --soft-hover: #123252;
+  --soft-accent: #123a4a;
+  --soft-blue: #132f4d;
+  --line-strong: #345878;
   --card: #0f2a4e;
   --line: #1b3b66;
   --shadow: 0 12px 34px rgb(0 0 0 / 40%);
+  --footer: #030f1d;
+  --footer-text: #b6cbe0;
   --admin-action-bg: #7cc0f5;
   --admin-action-hover: #a9d8fa;
   --admin-action-text: #061a31;
@@ -52,28 +75,10 @@
   --admin-danger: #ffc0ba;
   --admin-success-bg: #15392b;
   --admin-success: #a4e3bf;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    color-scheme: dark;
-    --background: #061a31;
-    --ink: #eaf2fb;
-    --muted: #a9bdd4;
-    --soft: #0a2342;
-    --card: #0f2a4e;
-    --line: #1b3b66;
-    --shadow: 0 12px 34px rgb(0 0 0 / 40%);
-    --admin-action-bg: #7cc0f5;
-    --admin-action-hover: #a9d8fa;
-    --admin-action-text: #061a31;
-    --admin-link: #9fc3e6;
-    --admin-danger-hover: #ffd1cb;
-    --admin-danger-bg: #3a1c24;
-    --admin-danger: #ffc0ba;
-    --admin-success-bg: #15392b;
-    --admin-success: #a4e3bf;
-  }
+  --youtube: #ff8a80;
+  --youtube-hover: #ffd1cb;
+  --youtube-soft: #3a1c24;
+  --youtube-border: #6d3540;
 }
 
 * {
@@ -95,6 +100,23 @@ body {
   font-size: 16px;
   line-height: 1.65;
   transition: background-color 180ms ease, color 180ms ease;
+}
+
+header,
+footer,
+#main-content,
+#main-content main > section {
+  transition: background-color 180ms ease, color 180ms ease, border-color 180ms ease;
+}
+
+#main-content main :where(section, article, form, input, select, textarea, button, a, h1, h2, h3, h4, p, li) {
+  transition-property: background-color, color, border-color, transform, box-shadow;
+  transition-duration: 180ms;
+  transition-timing-function: ease;
+}
+
+.public-page-motion {
+  min-width: 0;
 }
 
 body::before {

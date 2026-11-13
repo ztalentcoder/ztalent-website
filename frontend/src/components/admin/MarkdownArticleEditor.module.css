@@ -1,0 +1,97 @@
+.editor {
+  display: grid;
+  gap: 0.65rem;
+  min-width: 0;
+  width: 100%;
+}
+
+.toolbar,
+.tabs {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.toolbar button,
+.tabs button {
+  background: #fff;
+  border: 1px solid #d0d5dd;
+  border-radius: 0.4rem;
+  color: #344054;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.82rem;
+  padding: 0.4rem 0.6rem;
+}
+
+.toolbar button:hover,
+.tabs button:hover {
+  background: #f2f4f7;
+}
+
+.toolbar button:focus-visible,
+.tabs button:focus-visible {
+  outline: 3px solid #84adff;
+  outline-offset: 2px;
+}
+
+.toolbar button:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+.tabs [aria-selected='true'] {
+  background: #eff4ff;
+  border-color: #84adff;
+  color: #194185;
+  font-weight: 600;
+}
+
+.textarea {
+  border: 1px solid #d0d5dd;
+  border-radius: 0.55rem;
+  box-sizing: border-box;
+  font: 0.95rem/1.6 Consolas, 'Courier New', monospace;
+  min-height: 22rem;
+  padding: 0.8rem;
+  resize: vertical;
+  width: 100%;
+}
+
+.preview {
+  border: 1px solid #d0d5dd;
+  border-radius: 0.55rem;
+  min-height: 22rem;
+  padding: 1rem;
+}
+
+.fileInput {
+  display: none;
+}
+
+.help,
+.error {
+  font-size: 0.8rem;
+  margin: 0;
+}
+
+.help {
+  color: #667085;
+}
+
+.error {
+  color: #b42318;
+}
+
+@media (max-width: 600px) {
+  .toolbar button {
+    font-size: 0.75rem;
+    padding: 0.35rem 0.45rem;
+  }
+
+  .textarea,
+  .preview {
+    min-height: 16rem;
+  }
+}

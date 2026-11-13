@@ -8,7 +8,22 @@ const CONTENT_ROLES = ['SUPER_ADMIN', 'EDITOR'];
 const CONTENT_STATUSES = ['DRAFT', 'PUBLISHED', 'ARCHIVED'];
 const MESSAGE_STATUSES = ['NEW', 'READ', 'REPLIED', 'ARCHIVED'];
 const COURSE_LEVELS = ['BEGINNER', 'INTERMEDIATE', 'ADVANCED'];
-const SERVICE_ICONS = ['code', 'smartphone', 'layers', 'palette', 'database', 'plug', 'brain', 'workflow', 'settings', 'life-buoy'];
+const SERVICE_ICONS = [
+  'code',
+  'smartphone',
+  'layers',
+  'palette',
+  'database',
+  'plug',
+  'brain',
+  'workflow',
+  'settings',
+  'life-buoy',
+  'chart-no-axes-combined',
+  'layout-dashboard',
+  'brain-circuit',
+  'trending-up',
+];
 const CONTACT_TOPICS = [
   'GENERAL_QUESTION',
   'REQUEST_SYSTEM',
@@ -23,6 +38,10 @@ const SITE_STATISTIC_KEYS = [
   'institutions-served',
   'students-reached',
 ];
+const projectRelationsInclude = {
+  keyFeatures: { orderBy: { sortOrder: 'asc' } },
+  galleryImages: { orderBy: { sortOrder: 'asc' } },
+};
 
 const resourceConfigs = {
   'business-areas': {
@@ -32,6 +51,7 @@ const resourceConfigs = {
       slug: { type: 'slug', max: 150 },
       summary: { type: 'string', max: 300, nullable: true },
       description: { type: 'string', nullable: true },
+      icon: { type: 'enum', values: SERVICE_ICONS },
       imageUrl: { type: 'url', max: 2048, nullable: true, managedImagePath: true },
       isTechSolution: { type: 'boolean' },
       status: { type: 'enum', values: CONTENT_STATUSES, required: true },
@@ -108,10 +128,11 @@ const resourceConfigs = {
     model: 'service',
     fields: {
       businessAreaId: { type: 'uuid', required: true },
+      serviceCategoryId: { type: 'uuid', nullable: true },
       title: { type: 'string', required: true, max: 160 },
       slug: { type: 'slug', max: 180 },
       summary: { type: 'string', required: true, max: 300 },
-      description: { type: 'string', required: true },
+      description: { type: 'string' },
       icon: { type: 'enum', values: SERVICE_ICONS },
       keyFeatures: { type: 'stringArray', maxItems: 20, itemMax: 180 },
       status: { type: 'enum', values: CONTENT_STATUSES, required: true },
@@ -122,6 +143,7 @@ const resourceConfigs = {
     filters: {
       status: { field: 'status', values: CONTENT_STATUSES },
       businessAreaId: { field: 'businessAreaId', type: 'uuid' },
+      serviceCategoryId: { field: 'serviceCategoryId', type: 'uuid' },
       techSolutions: {
         relation: 'businessArea',
         relationField: 'isTechSolution',
@@ -130,38 +152,65 @@ const resourceConfigs = {
       },
     },
     orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
-    listInclude: { businessArea: { select: { id: true, name: true, status: true } } },
+    listInclude: {
+      businessArea: { select: { id: true, name: true, status: true } },
+      serviceCategory: { select: { id: true, name: true, businessAreaId: true } },
+    },
     createRecord: (request, data) => createUniqueSlugRecord(
       getPrisma(request),
       'service',
-      { ...data, icon: data.icon ?? 'code', keyFeatures: data.keyFeatures ?? [] },
+      {
+        ...data,
+        description: data.description ?? data.summary,
+        icon: data.icon ?? 'code',
+        keyFeatures: data.keyFeatures ?? [],
+      },
       'title',
       180,
       'businessAreaId',
     ),
     validateCreate: async (request, data) => {
+      if (request.query.businessAreaId !== undefined) {
+        assertScopedServiceArea(request, data.businessAreaId);
+      }
       if (request.query.techSolutions === 'true') {
         await validateTechSolutionCategory(request, data.businessAreaId);
       }
+      await validateServiceCategoryAssignment(request, data);
     },
     validateUpdate: async (request, id, data) => {
-      if (request.query.techSolutions !== 'true') return;
-      const current = await getPrisma(request).service.findUnique({
-        where: { id },
-        select: { businessArea: { select: { isTechSolution: true, _count: { select: { projects: true } } } } },
-      });
-      if (!current?.businessArea?.isTechSolution || current.businessArea._count.projects > 0) {
-        throw new HttpError(404, 'RESOURCE_NOT_FOUND', 'The requested resource was not found.');
+      if (request.query.businessAreaId !== undefined) {
+        assertScopedServiceArea(request, data.businessAreaId);
       }
-      if (data.businessAreaId) await validateTechSolutionCategory(request, data.businessAreaId);
+      if (request.query.techSolutions === 'true') {
+        const current = await getPrisma(request).service.findUnique({
+          where: { id },
+          select: { businessArea: { select: { isTechSolution: true, _count: { select: { projects: true } } } } },
+        });
+        if (!current?.businessArea?.isTechSolution || current.businessArea._count.projects > 0) {
+          throw new HttpError(404, 'RESOURCE_NOT_FOUND', 'The requested resource was not found.');
+        }
+        if (data.businessAreaId) await validateTechSolutionCategory(request, data.businessAreaId);
+      }
+      await validateServiceCategoryAssignment(request, data, id);
     },
     validateScope: async (request, id) => {
-      if (request.query.techSolutions !== 'true') return;
+      if (request.query.businessAreaId === undefined && request.query.techSolutions !== 'true') return;
       const current = await getPrisma(request).service.findUnique({
         where: { id },
-        select: { businessArea: { select: { isTechSolution: true, _count: { select: { projects: true } } } } },
+        select: {
+          businessAreaId: true,
+          businessArea: { select: { isTechSolution: true, _count: { select: { projects: true } } } },
+        },
       });
-      if (!current?.businessArea?.isTechSolution || current.businessArea._count.projects > 0) {
+      if (!current) {
+        throw new HttpError(404, 'RESOURCE_NOT_FOUND', 'The requested resource was not found.');
+      }
+      if (request.query.businessAreaId !== undefined) {
+        assertScopedServiceArea(request, current.businessAreaId);
+      }
+      if (request.query.techSolutions === 'true'
+        && (!current.businessArea?.isTechSolution || current.businessArea._count.projects > 0)) {
         throw new HttpError(404, 'RESOURCE_NOT_FOUND', 'The requested resource was not found.');
       }
     },
@@ -175,19 +224,84 @@ const resourceConfigs = {
       'businessAreaId',
     ),
   },
+  'service-categories': {
+    model: 'serviceCategory',
+    fields: {
+      businessAreaId: { type: 'uuid', required: true },
+      name: { type: 'string', required: true, max: 120 },
+      slug: { type: 'slug', max: 140 },
+      description: { type: 'string', max: 500, nullable: true },
+      status: { type: 'enum', values: CONTENT_STATUSES, required: true },
+      sortOrder: { type: 'integer', min: 0 },
+    },
+    search: ['name', 'slug', 'description'],
+    filters: {
+      status: { field: 'status', values: CONTENT_STATUSES },
+      businessAreaId: { field: 'businessAreaId', type: 'uuid' },
+    },
+    orderBy: [{ businessAreaId: 'asc' }, { sortOrder: 'asc' }, { name: 'asc' }],
+    listInclude: {
+      businessArea: { select: { id: true, name: true } },
+      _count: { select: { services: true } },
+    },
+    createRecord: (request, data) => createUniqueSlugRecord(
+      getPrisma(request),
+      'serviceCategory',
+      data,
+      'name',
+      140,
+      'businessAreaId',
+    ),
+    updateRecord: (request, id, data) => updateUniqueSlugRecord(
+      getPrisma(request),
+      'serviceCategory',
+      id,
+      data,
+      'name',
+      140,
+      'businessAreaId',
+    ),
+    validateUpdate: async (request, id, data) => {
+      if (!data.businessAreaId) return;
+      const current = await getPrisma(request).serviceCategory.findUnique({
+        where: { id },
+        select: { businessAreaId: true, _count: { select: { services: true } } },
+      });
+      if (!current) throw new HttpError(404, 'RESOURCE_NOT_FOUND', 'The requested resource was not found.');
+      if (current.businessAreaId !== data.businessAreaId && current._count.services > 0) {
+        throw new HttpError(409, 'CATEGORY_IN_USE', 'Reassign or delete the services in this category before changing its business area.');
+      }
+    },
+    validateDelete: async (request, id) => {
+      const serviceCount = await getPrisma(request).service.count({ where: { serviceCategoryId: id } });
+      if (serviceCount > 0) {
+        throw new HttpError(409, 'CATEGORY_IN_USE', 'Reassign or delete the services in this category before deleting it.');
+      }
+    },
+  },
   projects: {
     model: 'project',
     fields: {
       businessAreaId: { type: 'uuid', nullable: true },
       title: { type: 'string', required: true, max: 180 },
-      slug: { type: 'slug', required: true, max: 200 },
       summary: { type: 'string', required: true, max: 400 },
       description: { type: 'string', required: true },
       imageUrl: { type: 'url', max: 2048, nullable: true, managedImagePath: true },
+      problemStatement: { type: 'string', nullable: true },
+      solution: { type: 'string', nullable: true },
+      outcome: { type: 'string', nullable: true },
+      liveUrl: { type: 'url', max: 2048, nullable: true },
+      technologies: { type: 'stringArray', maxItems: 30, itemMax: 100 },
+      keyFeatures: { type: 'projectFeatures', nullable: true },
+      galleryImages: { type: 'projectGalleryImages', nullable: true },
       status: { type: 'enum', values: CONTENT_STATUSES, required: true },
       sortOrder: { type: 'integer', min: 0 },
       publishedAt: { type: 'date', nullable: true },
     },
+    createRecord: createProjectRecord,
+    updateRecord: updateProjectRecord,
+    listInclude: projectRelationsInclude,
+    detailInclude: projectRelationsInclude,
     search: ['title', 'slug', 'summary', 'description'],
     filters: {
       status: { field: 'status', values: CONTENT_STATUSES },
@@ -268,24 +382,43 @@ const resourceConfigs = {
       name: { type: 'string', required: true, max: 100 },
       slug: { type: 'slug', required: true, max: 120 },
       description: { type: 'string', max: 300, nullable: true },
+      status: { type: 'enum', values: CONTENT_STATUSES, required: true },
+      sortOrder: { type: 'integer', min: 0 },
     },
     search: ['name', 'slug', 'description'],
     filters: {},
-    orderBy: [{ name: 'asc' }],
+    orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
+    listInclude: { _count: { select: { posts: true } } },
+    validateCreate: (request, data) => validateBlogCategoryName(request, data),
+    validateUpdate: (request, id, data) => validateBlogCategoryName(request, data, id),
+    validateDelete: async (request, id) => {
+      const postCount = await getPrisma(request).blogPost.count({ where: { categoryId: id } });
+      if (postCount > 0) {
+        throw new HttpError(409, 'CATEGORY_IN_USE', 'Reassign the blog posts in this category before deleting it.');
+      }
+    },
   },
   'blog-posts': {
     model: 'blogPost',
     fields: {
       categoryId: { type: 'uuid', required: true },
       title: { type: 'string', required: true, max: 200 },
-      slug: { type: 'slug', required: true, max: 220 },
+      slug: { type: 'slug', max: 220, nullable: true },
+      author: { type: 'string', max: 180, nullable: true },
       excerpt: { type: 'string', max: 500, nullable: true },
       body: { type: 'string', required: true },
       coverImageUrl: { type: 'url', max: 2048, nullable: true, managedImagePath: true },
+      coverImageAlt: { type: 'string', max: 300, nullable: true },
+      readingTimeMinutes: { type: 'integer', min: 1, max: 240, nullable: true },
+      isFeatured: { type: 'boolean' },
+      seoTitle: { type: 'string', max: 180, nullable: true },
+      metaDescription: { type: 'string', max: 300, nullable: true },
       status: { type: 'enum', values: CONTENT_STATUSES, required: true },
       publishedAt: { type: 'date', nullable: true },
     },
-    search: ['title', 'slug', 'excerpt', 'body'],
+    createRecord: createBlogPostRecord,
+    listInclude: { category: { select: { name: true, slug: true } } },
+    search: ['title', 'slug', 'excerpt', 'body', 'author'],
     filters: {
       status: { field: 'status', values: CONTENT_STATUSES },
       categoryId: { field: 'categoryId', type: 'uuid' },
@@ -426,6 +559,35 @@ function slugifyValue(value, maxLength, fallback) {
     .slice(0, maxLength)
     .replace(/-+$/g, '');
   return slug || fallback;
+}
+
+async function validateServiceCategoryAssignment(request, data, serviceId) {
+  const prisma = getPrisma(request);
+  const current = serviceId
+    ? await prisma.service.findUnique({
+      where: { id: serviceId },
+      select: { businessAreaId: true, serviceCategoryId: true, status: true },
+    })
+    : null;
+  if (serviceId && !current) {
+    throw new HttpError(404, 'RESOURCE_NOT_FOUND', 'The requested resource was not found.');
+  }
+
+  const businessAreaId = Object.hasOwn(data, 'businessAreaId') ? data.businessAreaId : current?.businessAreaId;
+  const categoryId = Object.hasOwn(data, 'serviceCategoryId') ? data.serviceCategoryId : current?.serviceCategoryId;
+  const status = data.status ?? current?.status;
+  if (!categoryId) return;
+
+  const category = await prisma.serviceCategory.findUnique({
+    where: { id: categoryId },
+    select: { businessAreaId: true, status: true },
+  });
+  if (!category || category.businessAreaId !== businessAreaId) {
+    throw invalid('Select a service category belonging to the selected business area.');
+  }
+  if (status === 'PUBLISHED' && category.status !== 'PUBLISHED') {
+    throw invalid('A service can only be published in a published service category.');
+  }
 }
 
 function uniqueSlugCandidate(base, suffix, maxLength) {
@@ -612,6 +774,37 @@ function parseField(value, spec) {
     throw invalid('Null is not allowed for this field.');
   }
 
+  if (spec.type === 'projectFeatures') {
+    if (!Array.isArray(value) || value.length > 30) {
+      throw invalid('Project features contain an invalid number of entries.');
+    }
+    return value.map((feature, sortOrder) => {
+      if (!feature || typeof feature !== 'object' || Array.isArray(feature)
+        || Object.keys(feature).some((key) => !['title', 'description'].includes(key))) {
+        throw invalid('A project feature is invalid.');
+      }
+      const title = cleanString(feature.title, 180);
+      const description = cleanString(feature.description, 500);
+      if (!title || !description) throw invalid('Project features require a title and short description.');
+      return { title, description, sortOrder };
+    });
+  }
+  if (spec.type === 'projectGalleryImages') {
+    if (!Array.isArray(value) || value.length > 20) {
+      throw invalid('Project gallery images contain an invalid number of entries.');
+    }
+    return value.map((image, sortOrder) => {
+      if (!image || typeof image !== 'object' || Array.isArray(image)
+        || Object.keys(image).some((key) => key !== 'imageUrl')) {
+        throw invalid('A project gallery image is invalid.');
+      }
+      const imageUrl = cleanString(image.imageUrl, 2048);
+      if (!/^\/uploads\/images\/projects\/[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.(?:jpg|png|webp)$/i.test(imageUrl)) {
+        throw invalid('Project gallery images must use managed project image paths.');
+      }
+      return { imageUrl, sortOrder };
+    });
+  }
   if (spec.type === 'string') return cleanString(value, spec.max);
   if (spec.type === 'stringArray') {
     if (!Array.isArray(value) || value.length > spec.maxItems) {
@@ -709,6 +902,79 @@ function parseBody(body, fields, { creating = false, requiredFields = true } = {
   return data;
 }
 
+function projectCreateData(data) {
+  const { keyFeatures, galleryImages, ...fields } = data;
+  return {
+    ...fields,
+    slug: slugifyValue(data.title, 200, 'project'),
+    ...(keyFeatures?.length
+      ? { keyFeatures: { create: keyFeatures.map(({ title, description }, sortOrder) => ({ title, description, sortOrder })) } }
+      : {}),
+    ...(galleryImages?.length
+      ? { galleryImages: { create: galleryImages.map(({ imageUrl }, sortOrder) => ({ imageUrl, sortOrder })) } }
+      : {}),
+  };
+}
+
+function projectUpdateData(data) {
+  const { keyFeatures, galleryImages, ...fields } = data;
+  return {
+    ...fields,
+    ...(Object.hasOwn(data, 'keyFeatures')
+      ? {
+        keyFeatures: {
+          deleteMany: {},
+          create: (keyFeatures ?? []).map(({ title, description }, sortOrder) => ({ title, description, sortOrder })),
+        },
+      }
+      : {}),
+    ...(Object.hasOwn(data, 'galleryImages')
+      ? {
+        galleryImages: {
+          deleteMany: {},
+          create: (galleryImages ?? []).map(({ imageUrl }, sortOrder) => ({ imageUrl, sortOrder })),
+        },
+      }
+      : {}),
+  };
+}
+
+async function createProjectRecord(request, data) {
+  const prisma = getPrisma(request);
+  const item = await createUniqueSlugRecord(prisma, 'project', projectCreateData(data), 'title', 200);
+  return prisma.project.findUnique({
+    where: { id: item.id },
+    include: projectRelationsInclude,
+  });
+}
+
+async function createBlogPostRecord(request, data) {
+  const prisma = getPrisma(request);
+  const slug = data.slug || slugifyValue(data.title, 220, 'article');
+  return createUniqueSlugRecord(prisma, 'blogPost', { ...data, slug }, 'title', 220);
+}
+
+async function validateBlogCategoryName(request, data, id) {
+  const existing = await getPrisma(request).blogCategory.findFirst({
+    where: {
+      name: { equals: data.name, mode: 'insensitive' },
+      ...(id ? { id: { not: id } } : {}),
+    },
+    select: { id: true },
+  });
+  if (existing) {
+    throw new HttpError(409, 'DUPLICATE_CATEGORY', 'A category with this name already exists.');
+  }
+}
+
+async function updateProjectRecord(request, id, data) {
+  return getPrisma(request).project.update({
+    where: { id },
+    data: projectUpdateData(data),
+    include: projectRelationsInclude,
+  });
+}
+
 function parsePageValue(value, fallback, max) {
   if (value === undefined) return fallback;
   if (!/^[1-9]\d*$/.test(value) || Number(value) > max) throw invalid('Pagination values are invalid.');
@@ -755,6 +1021,23 @@ async function validateTechSolutionCategory(request, id) {
   }
 }
 
+function assertScopedServiceArea(request, serviceBusinessAreaId) {
+  const scopedBusinessAreaId = parseField(request.query.businessAreaId, { type: 'uuid' });
+  if (serviceBusinessAreaId !== scopedBusinessAreaId) {
+    throw new HttpError(404, 'RESOURCE_NOT_FOUND', 'The requested resource was not found.');
+  }
+}
+
+function getScopedServiceBody(request) {
+  if (request.query.businessAreaId === undefined) return request.body;
+  const scopedBusinessAreaId = parseField(request.query.businessAreaId, { type: 'uuid' });
+  const requestedBusinessAreaId = request.body?.businessAreaId;
+  if (requestedBusinessAreaId !== undefined && requestedBusinessAreaId !== scopedBusinessAreaId) {
+    throw new HttpError(404, 'RESOURCE_NOT_FOUND', 'The requested resource was not found.');
+  }
+  return { ...request.body, businessAreaId: scopedBusinessAreaId };
+}
+
 function sendItem(response, item, status = 200) {
   response.status(status).json({ status: 'success', item });
 }
@@ -797,7 +1080,8 @@ function createResourceRoutes(router, path, config) {
     if (config.allowCreate === false) {
       throw new HttpError(405, 'METHOD_NOT_ALLOWED', 'This resource cannot be created.');
     }
-    const data = parseBody(request.body, config.fields, { creating: true });
+    const body = config.model === 'service' ? getScopedServiceBody(request) : request.body;
+    const data = parseBody(body, config.fields, { creating: true });
     if (config.validateCreate) await config.validateCreate(request, data);
     const item = config.createRecord
       ? await config.createRecord(request, data)
@@ -808,14 +1092,18 @@ function createResourceRoutes(router, path, config) {
   router.get(`${collectionPath}/:id`, async (request, response) => {
     validateId(request.params.id);
     if (config.validateScope) await config.validateScope(request, request.params.id);
-    const item = await modelFor(request).findUnique({ where: { id: request.params.id } });
+    const item = await modelFor(request).findUnique({
+      where: { id: request.params.id },
+      ...(config.detailInclude ? { include: config.detailInclude } : {}),
+    });
     if (!item) throw new HttpError(404, 'RESOURCE_NOT_FOUND', 'The requested resource was not found.');
     sendItem(response, item);
   });
 
   const update = async (request, response) => {
     validateId(request.params.id);
-    const data = parseBody(request.body, config.fields);
+    const body = config.model === 'service' ? getScopedServiceBody(request) : request.body;
+    const data = parseBody(body, config.fields);
     if (config.validateScope) await config.validateScope(request, request.params.id);
     if (config.validateUpdate) await config.validateUpdate(request, request.params.id, data);
     const item = config.updateRecord
@@ -887,19 +1175,29 @@ export function createAdminCmsRouter() {
     });
     sendItem(response, item);
   });
-  const saveCompanyProfile = async (request, response) => {
-    const existing = await getPrisma(request).companyProfile.findUnique({ where: { id: 1 } });
+  adminRouter.put('/company-profile', async (request, response) => {
+    const prisma = getPrisma(request);
+    const existing = await prisma.companyProfile.findUnique({ where: { id: 1 } });
     const data = parseBody(request.body, companyProfileFields, { creating: !existing });
-    const item = await getPrisma(request).companyProfile.upsert({
+    const item = await prisma.companyProfile.upsert({
       where: { id: 1 },
       create: { id: 1, ...data },
       update: data,
       include: { socialLinks: { orderBy: { sortOrder: 'asc' } } },
     });
     sendItem(response, item);
-  };
-  adminRouter.put('/company-profile', saveCompanyProfile);
-  adminRouter.patch('/company-profile', saveCompanyProfile);
+  });
+  adminRouter.patch('/company-profile', async (request, response) => {
+    const prisma = getPrisma(request);
+    const data = parseBody(request.body, companyProfileFields, { requiredFields: false });
+    const item = await prisma.companyProfile.upsert({
+      where: { id: 1 },
+      create: { id: 1, name: data.name ?? 'Ztalent Coder', ...data },
+      update: data,
+      include: { socialLinks: { orderBy: { sortOrder: 'asc' } } },
+    });
+    sendItem(response, item);
+  });
 
   adminRouter.get('/about-page', async (request, response) => {
     const record = await getPrisma(request).aboutPageContent.findUnique({
@@ -952,9 +1250,22 @@ export function createAdminCmsRouter() {
   });
   adminRouter.post('/company-profile/social-links', async (request, response) => {
     const data = parseBody(request.body, socialLinkFields, { creating: true });
-    const item = await getPrisma(request).socialLink.create({
-      data: { ...data, companyProfileId: 1 },
+    data.platform = data.platform.trim().toLowerCase();
+    const prisma = getPrisma(request);
+    const duplicate = await prisma.socialLink.findFirst({
+      where: {
+        companyProfileId: 1,
+        platform: { equals: data.platform, mode: 'insensitive' },
+      },
+      select: { id: true },
     });
+    if (duplicate) throw new HttpError(409, 'DUPLICATE_SOCIAL_PLATFORM', 'A link for this social platform already exists.');
+    await prisma.companyProfile.upsert({
+      where: { id: 1 },
+      create: { id: 1, name: 'Ztalent Coder' },
+      update: {},
+    });
+    const item = await prisma.socialLink.create({ data: { ...data, companyProfileId: 1 } });
     sendItem(response, item, 201);
   });
   adminRouter.get('/company-profile/social-links/:id', async (request, response) => {
@@ -968,12 +1279,25 @@ export function createAdminCmsRouter() {
   const updateSocialLink = async (request, response) => {
     validateId(request.params.id);
     const data = parseBody(request.body, socialLinkFields);
-    const { count } = await getPrisma(request).socialLink.updateMany({
+    const prisma = getPrisma(request);
+    if (Object.hasOwn(data, 'platform')) {
+      data.platform = data.platform.trim().toLowerCase();
+      const duplicate = await prisma.socialLink.findFirst({
+        where: {
+          companyProfileId: 1,
+          id: { not: request.params.id },
+          platform: { equals: data.platform, mode: 'insensitive' },
+        },
+        select: { id: true },
+      });
+      if (duplicate) throw new HttpError(409, 'DUPLICATE_SOCIAL_PLATFORM', 'A link for this social platform already exists.');
+    }
+    const { count } = await prisma.socialLink.updateMany({
       where: { id: request.params.id, companyProfileId: 1 },
       data,
     });
     if (!count) throw new HttpError(404, 'RESOURCE_NOT_FOUND', 'The requested resource was not found.');
-    sendItem(response, await getPrisma(request).socialLink.findUnique({ where: { id: request.params.id } }));
+    sendItem(response, await prisma.socialLink.findUnique({ where: { id: request.params.id } }));
   };
   adminRouter.patch('/company-profile/social-links/:id', updateSocialLink);
   adminRouter.put('/company-profile/social-links/:id', updateSocialLink);

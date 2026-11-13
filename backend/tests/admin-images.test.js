@@ -41,6 +41,7 @@ async function createFixture(t, { role = 'EDITOR' } = {}) {
   t.after(() => rm(directory, { recursive: true, force: true }));
   const imageStorage = createImageStorage({ directory });
   const references = new Set();
+  const blogBodyReferences = new Set();
   const prismaClient = {
     adminSession: {
       findUnique: async () => ({
@@ -55,8 +56,23 @@ async function createFixture(t, { role = 'EDITOR' } = {}) {
       findFirst: async ({ where }) => references.has(where.logoUrl || where.homeIntroImageUrl) ? { id: 'record' } : null,
     },
     businessArea: { findFirst: async ({ where }) => references.has(where.imageUrl) ? { id: 'record' } : null },
-    project: { findFirst: async ({ where }) => references.has(where.imageUrl) ? { id: 'record' } : null },
-    blogPost: { findFirst: async ({ where }) => references.has(where.coverImageUrl) ? { id: 'record' } : null },
+    project: {
+      findFirst: async ({ where }) => (
+        references.has(where.imageUrl || where.galleryImages?.some?.imageUrl) ? { id: 'record' } : null
+      ),
+    },
+    blogPost: {
+      findFirst: async ({ where }) => {
+        if (where.coverImageUrl) return references.has(where.coverImageUrl) ? { id: 'record' } : null;
+        if (where.body?.contains) return blogBodyReferences.has(where.body.contains) ? { id: 'record' } : null;
+        if (where.OR) {
+          const coverUrl = where.OR.find((condition) => condition.coverImageUrl)?.coverImageUrl;
+          const inlineUrl = where.OR.find((condition) => condition.body?.contains)?.body.contains;
+          return references.has(coverUrl) || blogBodyReferences.has(inlineUrl) ? { id: 'record' } : null;
+        }
+        return null;
+      },
+    },
     teamMember: { findFirst: async ({ where }) => references.has(where.photoUrl) ? { id: 'record' } : null },
     academicCourse: { findFirst: async ({ where }) => references.has(where.imageUrl) ? { id: 'record' } : null },
     courseCategory: { findFirst: async ({ where }) => references.has(where.imageUrl) ? { id: 'record' } : null },
@@ -66,7 +82,7 @@ async function createFixture(t, { role = 'EDITOR' } = {}) {
     imageStorage,
     frontendOrigin: 'http://frontend.test',
   });
-  return { app, directory, imageStorage, references };
+  return { app, directory, imageStorage, references, blogBodyReferences };
 }
 
 function requestHeaders(cookie = true) {
@@ -207,6 +223,49 @@ test('managed image deletion preserves shared references and safely removes repl
     assert.deepEqual(await replacedDelete.json(), { status: 'success', managed: true, deleted: true });
     await assert.rejects(stat(path.join(directory, 'business-areas', path.basename(firstImage.url))), { code: 'ENOENT' });
     assert.ok((await stat(path.join(directory, 'business-areas', path.basename(replacement.url)))).isFile());
+  });
+});
+
+test('managed image deletion preserves references from project galleries', async (t) => {
+  const { app, directory, references } = await createFixture(t);
+  await withServer(app, async (baseUrl) => {
+    const uploadResponse = await upload(baseUrl, 'projects', IMAGE_FIXTURES[1][0]);
+    const { image } = await uploadResponse.json();
+    references.add(image.url);
+
+    const referencedDelete = await fetch(`${baseUrl}/api/admin/images`, {
+      method: 'DELETE',
+      headers: { ...requestHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url: image.url }),
+    });
+    assert.deepEqual(await referencedDelete.json(), { status: 'success', managed: true, deleted: false });
+    assert.ok((await stat(path.join(directory, 'projects', path.basename(image.url)))).isFile());
+
+    references.delete(image.url);
+    const unreferencedDelete = await fetch(`${baseUrl}/api/admin/images`, {
+      method: 'DELETE',
+      headers: { ...requestHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url: image.url }),
+    });
+    assert.deepEqual(await unreferencedDelete.json(), { status: 'success', managed: true, deleted: true });
+  });
+});
+
+test('managed image deletion preserves inline images referenced by blog Markdown', async (t) => {
+  const { app, directory, blogBodyReferences } = await createFixture(t);
+  await withServer(app, async (baseUrl) => {
+    const uploadResponse = await upload(baseUrl, 'blog-posts', IMAGE_FIXTURES[1][0]);
+    const { image } = await uploadResponse.json();
+    blogBodyReferences.add(image.url);
+
+    const response = await fetch(`${baseUrl}/api/admin/images`, {
+      method: 'DELETE',
+      headers: { ...requestHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url: image.url }),
+    });
+
+    assert.deepEqual(await response.json(), { status: 'success', managed: true, deleted: false });
+    assert.ok((await stat(path.join(directory, 'blog', path.basename(image.url)))).isFile());
   });
 });
 

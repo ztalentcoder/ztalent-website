@@ -1,7 +1,7 @@
 .footer {
   padding: 56px 0 24px;
-  background: #051728;
-  color: #a9c4e0;
+  background: var(--footer);
+  color: var(--footer-text);
 }
 
 .container {
@@ -54,13 +54,29 @@
   text-decoration: none;
 }
 
+.contactItem {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  align-items: start;
+  gap: 10px;
+}
+
+.contactItem svg {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  margin-top: 6px;
+  color: var(--blue);
+  stroke-width: 1.8;
+}
+
 .linkColumn a:hover {
   color: #ffffff;
 }
 
 .copyright {
   margin-top: 32px;
-  border-top: 1px solid #16395f;
+  border-top: 1px solid var(--line);
   padding-top: 18px;
   font-size: 0.87rem;
 }

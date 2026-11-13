@@ -1,5 +1,41 @@
 # Backend deployment notes
 
+## Local development and port conflicts
+
+From `backend/`, both `npm.cmd run dev` and `npm.cmd start` use port `3000`
+unless `PORT` is set. Normally, run only one backend instance on that port.
+Startup failures report the stage, error name and code when available, and a
+sanitized message. An `EADDRINUSE` diagnostic means the configured port is
+already occupied; the backend does not terminate the other process.
+
+To identify the listener in Windows PowerShell:
+
+```powershell
+Get-NetTCPConnection -LocalPort 3000 -State Listen |
+  Select-Object LocalAddress, LocalPort, OwningProcess
+Get-CimInstance Win32_Process -Filter "ProcessId = <PID>" |
+  Select-Object ProcessId, CommandLine
+```
+
+Replace `<PID>` with the reported `OwningProcess` and verify the command before
+taking any action. Do not terminate an unfamiliar or shared process.
+
+To run a temporary second instance on another available port without changing
+`.env`, open a separate PowerShell terminal in `backend/` and set the variable
+only for that terminal. For example, use port `3002` only if it is free:
+
+```powershell
+$env:PORT = "3002"
+npm.cmd run dev
+```
+
+Use the corresponding port in health checks, then remove the temporary setting
+after stopping that development process:
+
+```powershell
+Remove-Item Env:PORT
+```
+
 ## Initial SUPER_ADMIN provisioning
 
 The backend does not create administrator accounts during startup and has no
@@ -84,20 +120,24 @@ Admin CMS routes require a valid admin session. Content routes permit
 `SUPER_ADMIN` and `EDITOR`; contact-message list, detail, and status routes are
 restricted to `SUPER_ADMIN`.
 
-The Tech Solutions catalogue reuses `business-areas` as service categories and
-the existing `services` resource for service records. Service slugs are
-generated uniquely within their category. Services support a validated icon
-identifier and an ordered feature list; category deletion is blocked while
-services reference that category.
-The Tech Solutions admin view scopes these existing endpoints to categories
-marked for Tech Solutions and their services. Categories linked to portfolio
-projects are excluded from that dedicated view to avoid changing shared content.
+Business Areas are managed independently from Services and retain their image
+and portfolio-project relationships. The Academic admin page manages its
+services, service categories, and independent course catalogue. Tech Solutions
+and Data & AI each manage only services assigned to their own Business Area;
+their service forms do not expose categories or image fields. Scoped service
+requests bind creates and edits to the selected Business Area. Service
+Categories remain available to the Academic catalogue and are scoped to one
+Business Area. Service slugs are generated uniquely within their Business
+Area; category slugs are unique within their Business Area. Services support
+a validated icon identifier and an ordered feature list. Category and
+Business Area deletion is blocked while dependent services remain assigned;
+Business Area deletion is also blocked while projects refer to it.
 
 - `GET /api/admin/dashboard`
 - `GET`, `PUT`, `PATCH /api/admin/company-profile`
 - `GET`, `POST /api/admin/company-profile/social-links`
 - `GET`, `PUT`, `PATCH`, `DELETE /api/admin/company-profile/social-links/:id`
-- `GET`, `POST /api/admin/{business-areas,services,projects,academic-courses,blog-categories,blog-posts,team-members,testimonials,site-statistics}`
+- `GET`, `POST /api/admin/{business-areas,services,service-categories,projects,academic-courses,blog-categories,blog-posts,team-members,testimonials,site-statistics}`
 - `GET`, `PUT`, `PATCH`, `DELETE /api/admin/{resource}/:id` for each resource above
 - `GET`, `POST /api/admin/course-categories` and
   `GET`, `PUT`, `PATCH`, `DELETE /api/admin/course-categories/:id`
@@ -115,6 +155,16 @@ and write responses use `{ status: "success", item }`; deletes return
 `{ status: "success" }`. Dashboard counts use `businessAreas`, `services`,
 `projects`, `blogPosts`, `teamMembers`, and `newContactMessages`.
 
+Blog categories have an editable visibility status and display order. A
+category cannot be deleted while articles are assigned to it. Blog posts
+support optional author, cover-image alt text, reading-time estimate, featured
+flag, SEO title, and meta description fields. New post slugs are generated
+uniquely from the title; an administrator may edit the generated slug. Article
+body content is authored as Markdown, rendered without raw HTML, and supports
+managed JPEG, PNG, and WebP image uploads through the existing 5 MB image API.
+Inline images referenced by article Markdown are protected from managed-image
+cleanup.
+
 ## Public CMS content API
 
 The public content API is read-only and does not require an admin session.
@@ -127,17 +177,19 @@ and active social links are provided for the public website.
   descriptions, with published project/course counts and saved institution/
   student values; not cached)
 - `GET /api/public/business-areas` and `/api/public/business-areas/:slug`
-- `GET /api/public/services` (published services and categories only; optional
-  `businessArea` slug filter; includes a safe icon identifier and key features)
+- `GET /api/public/services` (published services under published Business
+  Areas; optional `businessArea` slug filter; includes published categories,
+  safe icon identifiers, and key features)
 - `GET /api/public/projects` (optional `businessArea` slug filter) and
   `/api/public/projects/:slug`
 - `GET /api/public/course-categories` (published categories only)
 - `GET /api/public/academic-courses` (optional `search`, `category`, `level`,
   and `sort` filters) and
   `/api/public/academic-courses/:slug`
-- `GET /api/public/blog-categories` (only categories with published posts)
-- `GET /api/public/blog-posts` (optional `category` slug filter) and
-  `/api/public/blog-posts/:slug`
+- `GET /api/public/blog-categories` (published categories with published-post
+  counts)
+- `GET /api/public/blog-posts` (optional `category` slug and `search` filters),
+  `/api/public/blog-posts/featured`, and `/api/public/blog-posts/:slug`
 - `GET /api/public/team-members`
 - `GET /api/public/testimonials`
 - `GET /api/public/site-statistics` (active statistics only)
@@ -150,6 +202,16 @@ and course totals are counted from published records; institution and student
 values come from their saved SiteStatistic entries.
 Contact messages and administrative models are not exposed.
 
+Published blog posts include their editorial and SEO fields, a reading-time
+estimate when no manual estimate is set, and up to three related published
+articles from the same category. The featured endpoint returns the most
+recently published post marked as featured, or a null item when none exists.
+Blog categories and article metadata are introduced by the additive
+`20261113220000_blog_cms_enhancements` Prisma migration. It adds no sample
+articles and preserves existing category and post content. Apply pending
+migrations with the deployment's normal `prisma migrate deploy` process before
+deploying the updated backend.
+
 Course category and episode data is introduced by the additive
 `20261110110000_academic_course_catalogue` Prisma migration. Apply pending
 migrations with the deployment's normal `prisma migrate deploy` process before
@@ -158,6 +220,13 @@ category because their intended category cannot be inferred safely; assign a
 category in the Academic Courses manager before publishing them through the
 public catalogue. The previous manual episode count is retained as ignored
 legacy data; public totals use only published episode records.
+
+The optional service-category relationship and Business Area icon are added by
+the additive `20261111103000_service_categories` migration. It creates the
+scoped `service_categories` table and adds a nullable category reference to
+existing services, preserving existing records and project associations.
+Apply it through the deployment's normal `prisma migrate deploy` process before
+deploying the updated backend; it is not applied automatically by the app.
 
 The public course catalogue accepts `search` (course title), `category` (slug),
 `level`, and `sort` (`displayOrder`, `titleAsc`, `titleDesc`, or `newest`) along

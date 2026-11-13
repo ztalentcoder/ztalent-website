@@ -9,12 +9,13 @@
   background: transparent;
   color: #ffffff;
   cursor: pointer;
-  transition: border-color 160ms ease, color 160ms ease;
+  transition: border-color 160ms ease, color 160ms ease, background-color 160ms ease, transform 160ms ease;
 }
 
 .toggle:hover {
   border-color: #7cc0f5;
   color: #7cc0f5;
+  transform: translateY(-1px);
 }
 
 .toggle svg {
@@ -25,4 +26,10 @@
   stroke-linecap: round;
   stroke-linejoin: round;
   stroke-width: 1.7;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toggle {
+    transition: none;
+  }
 }

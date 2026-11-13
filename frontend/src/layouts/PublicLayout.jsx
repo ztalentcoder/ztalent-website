@@ -1,22 +1,44 @@
-import { useEffect, useState } from 'react';
-import { Outlet } from 'react-router-dom';
+import { useEffect, useLayoutEffect, useState } from 'react';
+import { Outlet, useLocation } from 'react-router-dom';
 import Footer from '../components/layout/Footer.jsx';
 import Header from '../components/navigation/Header.jsx';
+import PublicPageMotion from '../components/public/PublicPageMotion.jsx';
 import { PublicContentProvider } from '../context/PublicContentContext.jsx';
 
 function getInitialTheme() {
-  const savedTheme = window.localStorage.getItem('ztalent-theme');
-  if (savedTheme === 'light' || savedTheme === 'dark') return savedTheme;
-  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  try {
+    const savedTheme = window.localStorage.getItem('ztalent-theme');
+    return savedTheme === 'dark' ? 'dark' : 'light';
+  } catch (error) {
+    console.warn('Theme preference could not be read from local storage.', error);
+    return 'light';
+  }
 }
 
 export default function PublicLayout() {
   const [theme, setTheme] = useState(getInitialTheme);
+  const location = useLocation();
+
+  useLayoutEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    document.querySelector('meta[name="theme-color"]')?.setAttribute(
+      'content',
+      theme === 'dark' ? '#061a31' : '#08223d',
+    );
+  }, [theme]);
 
   useEffect(() => {
-    document.documentElement.dataset.theme = theme;
-    window.localStorage.setItem('ztalent-theme', theme);
+    try {
+      window.localStorage.setItem('ztalent-theme', theme);
+    } catch (error) {
+      console.warn('Theme preference could not be saved to local storage.', error);
+    }
   }, [theme]);
+
+  useLayoutEffect(() => () => {
+    document.documentElement.dataset.theme = 'light';
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', '#08223d');
+  }, []);
 
   const toggleTheme = () => setTheme((current) => current === 'light' ? 'dark' : 'light');
 
@@ -26,7 +48,9 @@ export default function PublicLayout() {
         <a className="skip-link" href="#main-content">Skip to content</a>
         <Header theme={theme} onThemeToggle={toggleTheme} />
         <div id="main-content">
-          <Outlet />
+          <PublicPageMotion key={location.pathname}>
+            <Outlet />
+          </PublicPageMotion>
         </div>
         <Footer />
       </>

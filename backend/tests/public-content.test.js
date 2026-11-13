@@ -47,14 +47,19 @@ test('public company profile exposes only allowlisted contact fields and active 
           name: 'Ztalent Coder',
           tagline: 'Learn and build',
           description: 'Public description',
-          email: 'public@example.test',
-          phone: '+10000000',
-          location: 'Public address',
+          email: 'ztalentcoder@gmail.com',
+          phone: '+255 622 923 299',
+          location: 'Zanzibar',
           hours: 'Weekdays',
           logoUrl: 'https://example.test/logo.png',
           homeIntroImageUrl: '/uploads/images/company/123e4567-e89b-42d3-a456-426614174000.jpg',
           passwordHash: 'secret',
-          socialLinks: [{ platform: 'linkedin', url: 'https://linkedin.example', isActive: true }],
+          socialLinks: [
+            { platform: 'instagram', url: 'https://www.instagram.com/ztalentcoder/', isActive: true },
+            { platform: 'facebook', url: 'https://www.facebook.com/ztalentcoder', isActive: true },
+            { platform: 'whatsapp', url: 'https://wa.me/255622923299', isActive: true },
+            { platform: 'youtube', url: 'https://www.youtube.com/@ztalentcoder', isActive: true },
+          ],
         };
       },
     },
@@ -68,13 +73,18 @@ test('public company profile exposes only allowlisted contact fields and active 
         name: 'Ztalent Coder',
         tagline: 'Learn and build',
         description: 'Public description',
-        email: 'public@example.test',
-        phone: '+10000000',
-        location: 'Public address',
+        email: 'ztalentcoder@gmail.com',
+        phone: '+255 622 923 299',
+        location: 'Zanzibar',
         hours: 'Weekdays',
         logoUrl: 'https://example.test/logo.png',
         homeIntroImageUrl: '/uploads/images/company/123e4567-e89b-42d3-a456-426614174000.jpg',
-        socialLinks: [{ platform: 'linkedin', url: 'https://linkedin.example' }],
+        socialLinks: [
+          { platform: 'instagram', url: 'https://www.instagram.com/ztalentcoder/' },
+          { platform: 'facebook', url: 'https://www.facebook.com/ztalentcoder' },
+          { platform: 'whatsapp', url: 'https://wa.me/255622923299' },
+          { platform: 'youtube', url: 'https://www.youtube.com/@ztalentcoder' },
+        ],
       },
     });
   });
@@ -185,6 +195,11 @@ test('public collections select published records, serialize explicit fields, an
   });
   assert.equal(seen.options.skip, 5);
   assert.equal(seen.options.take, 5);
+  assert.deepEqual(seen.options.orderBy, [
+    { sortOrder: 'asc' },
+    { publishedAt: 'desc' },
+    { createdAt: 'desc' },
+  ]);
   assert.equal(seen.options.where.status, 'PUBLISHED');
   assert.deepEqual(seen.options.where.businessArea, { slug: 'technology', status: 'PUBLISHED' });
   assert.equal(seen.options.select.status, undefined);
@@ -194,6 +209,12 @@ test('public collections select published records, serialize explicit fields, an
 test('unpublished and missing slug content both return a generic 404', async () => {
   const queried = [];
   const app = publicApp(createPublicPrisma({
+    project: {
+      findFirst: async (options) => {
+        queried.push(options);
+        return null;
+      },
+    },
     blogPost: {
       findFirst: async (options) => {
         queried.push(options);
@@ -202,6 +223,11 @@ test('unpublished and missing slug content both return a generic 404', async () 
     },
   }));
   await withServer(app, async (baseUrl) => {
+    const unpublishedProject = await fetch(`${baseUrl}/api/public/projects/draft-project`);
+    assert.equal(unpublishedProject.status, 404);
+    assert.deepEqual(await unpublishedProject.json(), {
+      error: { code: 'CONTENT_NOT_FOUND', message: 'The requested content was not found.' },
+    });
     const response = await fetch(`${baseUrl}/api/public/blog-posts/draft-post`);
     assert.equal(response.status, 404);
     assert.deepEqual(await response.json(), {
@@ -213,7 +239,12 @@ test('unpublished and missing slug content both return a generic 404', async () 
       error: { code: 'CONTENT_NOT_FOUND', message: 'The requested content was not found.' },
     });
   });
-  assert.deepEqual(queried[0].where, { status: 'PUBLISHED', slug: 'draft-post' });
+  assert.deepEqual(queried[0].where, { status: 'PUBLISHED', slug: 'draft-project' });
+  assert.deepEqual(queried[1].where, {
+    status: 'PUBLISHED',
+    category: { status: 'PUBLISHED' },
+    slug: 'draft-post',
+  });
 });
 
 test('published-only resources enforce status filters and filter validation', async () => {
@@ -304,6 +335,7 @@ test('public services expose only published category services with safe icon dat
           keyFeatures: ['Accessible', 'Maintainable'],
           status: 'PUBLISHED',
           businessArea: { slug: 'software-development', name: 'Software Development', status: 'PUBLISHED' },
+          serviceCategory: { slug: 'software-development', name: 'Software Development', status: 'PUBLISHED' },
         }];
       },
       count: async () => 1,
@@ -320,11 +352,13 @@ test('public services expose only published category services with safe icon dat
       icon: 'code',
       keyFeatures: ['Accessible', 'Maintainable'],
       businessArea: { slug: 'software-development', name: 'Software Development' },
+      category: { slug: 'software-development', name: 'Software Development' },
     }]);
   });
   assert.deepEqual(optionsSeen.where, {
     status: 'PUBLISHED',
     businessArea: { status: 'PUBLISHED' },
+    OR: [{ serviceCategoryId: null }, { serviceCategory: { status: 'PUBLISHED' } }],
   });
   assert.deepEqual(optionsSeen.select, {
     slug: true,
@@ -334,6 +368,7 @@ test('public services expose only published category services with safe icon dat
     icon: true,
     keyFeatures: true,
     businessArea: { select: { slug: true, name: true, status: true } },
+    serviceCategory: { select: { slug: true, name: true, status: true } },
   });
 });
 
@@ -372,8 +407,16 @@ test('all public content collections constrain database reads to public records'
   for (const name of ['businessArea', 'service', 'project', 'academicCourse', 'blogPost', 'testimonial']) {
     assert.equal(whereByModel[name].status, 'PUBLISHED', name);
   }
+  assert.deepEqual(whereByModel.service, {
+    status: 'PUBLISHED',
+    businessArea: { status: 'PUBLISHED' },
+    OR: [{ serviceCategoryId: null }, { serviceCategory: { status: 'PUBLISHED' } }],
+  });
   assert.deepEqual(whereByModel.teamMember, { status: 'PUBLISHED', photoUrl: { not: null } });
-  assert.deepEqual(whereByModel.blogCategory, { posts: { some: { status: 'PUBLISHED' } } });
+  assert.deepEqual(whereByModel.blogCategory, {
+    status: 'PUBLISHED',
+    posts: { some: { status: 'PUBLISHED' } },
+  });
   assert.deepEqual(whereByModel.courseCategory, { status: 'PUBLISHED' });
   assert.deepEqual(whereByModel.siteStatistic, {
     isActive: true,
@@ -389,6 +432,7 @@ test('published project, blog, course, and business-area detail routes use slug 
     },
     blogPost: {
       findFirst: async (options) => { seen.blogPost = options; return { slug: 'public-post', title: 'Post', excerpt: null, body: 'Body', coverImageUrl: null, publishedAt: null, category: { slug: 'news', name: 'News' } }; },
+      findMany: async () => [],
     },
     academicCourse: {
       findFirst: async (options) => { seen.academicCourse = options; return { slug: 'public-course', title: 'Course', summary: null, level: 'BEGINNER', language: null, episodeCount: null, externalUrl: 'https://example.test/course', publishedAt: null }; },
@@ -413,10 +457,81 @@ test('published project, blog, course, and business-area detail routes use slug 
     const expectedWhere = model === 'academicCourse'
       ? { slug: seen[model].where.slug, status: 'PUBLISHED', category: { status: 'PUBLISHED' } }
       : { slug: seen[model].where.slug, status: 'PUBLISHED' };
+    if (model === 'blogPost') expectedWhere.category = { status: 'PUBLISHED' };
     assert.deepEqual(seen[model].where, expectedWhere);
     assert.equal(seen[model].select.passwordHash, undefined);
     assert.equal(seen[model].select.tokenHash, undefined);
   }
+});
+
+test('published project details include ordered structured content and explicitly serialize gallery images', async () => {
+  let projectQuery;
+  const project = {
+    slug: 'detailed-project',
+    title: 'Detailed Project',
+    summary: 'A project summary.',
+    description: 'Project overview.',
+    imageUrl: '/uploads/images/projects/cover.png',
+    publishedAt: null,
+    businessArea: null,
+    problemStatement: 'A real problem.',
+    solution: 'An appropriate solution.',
+    outcome: 'A positive impact.',
+    liveUrl: 'https://example.test/project',
+    technologies: ['React', 'PostgreSQL'],
+    keyFeatures: [
+      { title: 'First', description: 'First details.', sortOrder: 0 },
+      { title: 'Second', description: 'Second details.', sortOrder: 1 },
+    ],
+    galleryImages: [
+      { imageUrl: '/uploads/images/projects/one.png', sortOrder: 0 },
+      { imageUrl: '/uploads/images/projects/two.png', sortOrder: 1 },
+    ],
+  };
+  const app = publicApp(createPublicPrisma({
+    project: {
+      findFirst: async (options) => {
+        projectQuery = options;
+        return project;
+      },
+    },
+  }));
+
+  await withServer(app, async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/api/public/projects/detailed-project`);
+    assert.equal(response.status, 200);
+    assert.deepEqual((await response.json()).item, {
+      slug: 'detailed-project',
+      title: 'Detailed Project',
+      summary: 'A project summary.',
+      description: 'Project overview.',
+      imageUrl: '/uploads/images/projects/cover.png',
+      publishedAt: null,
+      businessArea: null,
+      problemStatement: 'A real problem.',
+      solution: 'An appropriate solution.',
+      keyFeatures: [
+        { title: 'First', description: 'First details.' },
+        { title: 'Second', description: 'Second details.' },
+      ],
+      technologies: ['React', 'PostgreSQL'],
+      outcome: 'A positive impact.',
+      galleryImages: [
+        '/uploads/images/projects/one.png',
+        '/uploads/images/projects/two.png',
+      ],
+      liveUrl: 'https://example.test/project',
+    });
+  });
+  assert.deepEqual(projectQuery.where, { slug: 'detailed-project', status: 'PUBLISHED' });
+  assert.deepEqual(projectQuery.select.keyFeatures.orderBy, { sortOrder: 'asc' });
+  assert.deepEqual(projectQuery.select.galleryImages.orderBy, { sortOrder: 'asc' });
+  assert.deepEqual(projectQuery.select.keyFeatures.select, {
+    title: true,
+    description: true,
+    sortOrder: true,
+  });
+  assert.deepEqual(projectQuery.select.galleryImages.select, { imageUrl: true, sortOrder: true });
 });
 
 test('blog categories require published posts and related records are serialized safely', async () => {
@@ -425,7 +540,7 @@ test('blog categories require published posts and related records are serialized
     blogCategory: {
       findMany: async (options) => {
         seen.category = options;
-        return [{ slug: 'updates', name: 'Updates', description: null, createdAt: new Date(), posts: [{ body: 'private' }] }];
+        return [{ slug: 'updates', name: 'Updates', description: null, _count: { posts: 4 } }];
       },
       count: async () => 1,
     },
@@ -445,7 +560,12 @@ test('blog categories require published posts and related records are serialized
   }));
   await withServer(app, async (baseUrl) => {
     const categories = await fetch(`${baseUrl}/api/public/blog-categories`);
-    assert.deepEqual((await categories.json()).items, [{ slug: 'updates', name: 'Updates', description: null }]);
+    assert.deepEqual((await categories.json()).items, [{
+      slug: 'updates',
+      name: 'Updates',
+      description: null,
+      postCount: 4,
+    }]);
     const testimonials = await fetch(`${baseUrl}/api/public/testimonials`);
     assert.deepEqual((await testimonials.json()).items, [{
       quote: 'Good work',
@@ -454,9 +574,145 @@ test('blog categories require published posts and related records are serialized
       project: null,
     }]);
   });
-  assert.deepEqual(seen.category.where, { posts: { some: { status: 'PUBLISHED' } } });
+  assert.deepEqual(seen.category.where, {
+    status: 'PUBLISHED',
+    posts: { some: { status: 'PUBLISHED' } },
+  });
   assert.equal(seen.testimonial.where.status, 'PUBLISHED');
   assert.equal(seen.testimonial.select.status, undefined);
+});
+
+test('blog listing validates combined filters, applies publication constraints, and serializes editorial fields', async () => {
+  const seen = {};
+  const article = {
+    slug: 'public-article',
+    title: 'AI for good',
+    excerpt: 'A practical AI story.',
+    body: 'A short body',
+    coverImageUrl: '/uploads/images/blog/12345678-1234-4123-8123-123456789012.png',
+    coverImageAlt: 'AI dashboard',
+    author: 'Editorial Team',
+    readingTimeMinutes: null,
+    isFeatured: true,
+    seoTitle: 'AI guide',
+    metaDescription: 'A useful guide.',
+    publishedAt: new Date('2026-01-02T00:00:00Z'),
+    updatedAt: new Date('2026-01-03T00:00:00Z'),
+    category: { slug: 'data-ai', name: 'Data & AI' },
+  };
+  const regularArticle = { ...article, slug: 'regular-article', title: 'Regular article', isFeatured: false };
+  const app = publicApp(createPublicPrisma({
+    blogPost: {
+      findMany: async (options) => { seen.list = options; return [article, regularArticle]; },
+      count: async (options) => { seen.count = options; return 7; },
+    },
+  }));
+
+  await withServer(app, async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/api/public/blog-posts?page=2&pageSize=3&category=data-ai&search=AI`);
+    assert.equal(response.status, 200);
+    const payload = await response.json();
+    assert.deepEqual(payload.pagination, { page: 2, pageSize: 3, total: 7, pageCount: 3 });
+    assert.deepEqual(payload.items[0], {
+      slug: 'public-article',
+      title: 'AI for good',
+      excerpt: 'A practical AI story.',
+      body: 'A short body',
+      coverImageUrl: article.coverImageUrl,
+      coverImageAlt: 'AI dashboard',
+      author: 'Editorial Team',
+      readingTimeMinutes: 1,
+      seoTitle: 'AI guide',
+      metaDescription: 'A useful guide.',
+      publishedAt: '2026-01-02T00:00:00.000Z',
+      updatedAt: '2026-01-03T00:00:00.000Z',
+      category: { slug: 'data-ai', name: 'Data & AI' },
+    });
+    assert.deepEqual(payload.items.map(({ slug }) => slug), ['public-article', 'regular-article']);
+    assert.equal(payload.items[1].isFeatured, undefined);
+  });
+
+  const expectedWhere = {
+    status: 'PUBLISHED',
+    category: { slug: 'data-ai', status: 'PUBLISHED' },
+    OR: ['title', 'excerpt', 'body'].map((field) => ({
+      [field]: { contains: 'AI', mode: 'insensitive' },
+    })),
+  };
+  assert.deepEqual(seen.list.where, expectedWhere);
+  assert.deepEqual(seen.count.where, expectedWhere);
+  assert.equal(seen.list.skip, 3);
+  assert.equal(seen.list.take, 3);
+  assert.equal(seen.list.where.isFeatured, undefined);
+  assert.equal(seen.list.select.isFeatured, undefined);
+  assert.deepEqual(seen.list.orderBy, [
+    { publishedAt: 'desc' },
+    { createdAt: 'desc' },
+  ]);
+  assert.equal(seen.list.select.status, undefined);
+});
+
+test('published blog detail and related articles do not expose featured state', async () => {
+  const seen = {};
+  const article = {
+    slug: 'published-article',
+    title: 'Published Article',
+    excerpt: 'An excerpt.',
+    body: 'Body content',
+    coverImageUrl: null,
+    coverImageAlt: null,
+    author: 'Editor',
+    readingTimeMinutes: 3,
+    isFeatured: true,
+    seoTitle: null,
+    metaDescription: null,
+    publishedAt: new Date('2026-02-01T00:00:00Z'),
+    updatedAt: new Date('2026-02-01T00:00:00Z'),
+    categoryId: 'category-id',
+    category: { slug: 'technology', name: 'Technology' },
+  };
+  const related = {
+    ...article,
+    slug: 'related-article',
+    title: 'Related Article',
+    isFeatured: false,
+  };
+  const app = publicApp(createPublicPrisma({
+    blogPost: {
+      findFirst: async (options) => {
+        seen.detail = options;
+        return article;
+      },
+      findMany: async (options) => {
+        if (options.where.slug?.not) {
+          seen.related = options;
+          return [related];
+        }
+        return [];
+      },
+    },
+  }));
+
+  await withServer(app, async (baseUrl) => {
+    const detailResponse = await fetch(`${baseUrl}/api/public/blog-posts/published-article`);
+    assert.equal(detailResponse.status, 200);
+    const detail = (await detailResponse.json()).item;
+    assert.deepEqual(detail.relatedPosts.map(({ slug }) => slug), ['related-article']);
+    assert.equal(detail.isFeatured, undefined);
+    assert.equal(detail.relatedPosts[0].isFeatured, undefined);
+  });
+
+  assert.deepEqual(seen.detail.where, {
+    status: 'PUBLISHED',
+    category: { status: 'PUBLISHED' },
+    slug: 'published-article',
+  });
+  assert.deepEqual(seen.related.where, {
+    status: 'PUBLISHED',
+    category: { status: 'PUBLISHED' },
+    categoryId: 'category-id',
+    slug: { not: 'published-article' },
+  });
 });
 
 test('public database errors are returned as a safe generic response', async () => {

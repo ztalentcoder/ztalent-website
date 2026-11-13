@@ -1,13 +1,12 @@
 import SectionHeading from '../../components/common/SectionHeading.jsx';
-import { CallToAction, CardGrid, ContentSection, InfoCard, PageHero } from '../../components/public/PublicPage.jsx';
+import ServiceIcon from '../../components/common/ServiceIcon.jsx';
+import { CallToAction, ContentSection, PageHero } from '../../components/public/PublicPage.jsx';
 import { PageMetadata, PublicContentState } from '../../components/public/PublicContentState.jsx';
 import usePublicContent from '../../hooks/usePublicContent.js';
-import styles from '../../components/public/PublicPage.module.css';
-
-const dataSteps = ['Data sources', 'Collection', 'Cleaning', 'Storage', 'Dashboards and reports'];
+import styles from './TechSolutionsPage.module.css';
 
 export default function DataAiPage() {
-  const services = usePublicContent('services', { pageSize: 20 });
+  const services = usePublicContent('services', { pageSize: 50, businessArea: 'data-ai' });
   const items = services.data?.items ?? [];
 
   return (
@@ -15,18 +14,24 @@ export default function DataAiPage() {
       <PageMetadata title="Data & AI" description="Published data and artificial intelligence services." />
       <PageHero title="Data & AI" description="Collect it, clean it, understand it and use it." />
       <ContentSection>
-        <SectionHeading title="Our services" description="Published services from our business areas." />
+        <SectionHeading
+          title="Driving Innovation with Data & AI"
+          description="We help organizations unlock the value of data through engineering, analytics, visualization, and artificial intelligence."
+        />
         {items.length > 0 ? (
-          <CardGrid>
+          <div className={styles.serviceGrid}>
             {items.map((service) => (
-              <InfoCard
-                key={`${service.businessArea?.slug || 'service'}-${service.slug}`}
-                eyebrow={service.businessArea?.name}
-                title={service.title}
-                description={service.summary || service.description}
-              />
+              <article className={styles.serviceCard} key={service.slug}>
+                <span className={styles.iconFrame}>
+                  <ServiceIcon name={service.icon} />
+                </span>
+                <div className={styles.cardContent}>
+                  <h3>{service.title}</h3>
+                  <p>{service.summary || service.description}</p>
+                </div>
+              </article>
             ))}
-          </CardGrid>
+          </div>
         ) : (
           <PublicContentState
             status={services.status}
@@ -35,17 +40,6 @@ export default function DataAiPage() {
             empty="There are no published services yet."
           />
         )}
-      </ContentSection>
-      <ContentSection soft>
-        <SectionHeading title="From raw data to decisions" />
-        <div className={styles.flow} role="list" aria-label="Data process">
-          {dataSteps.map((step, index) => (
-            <span className={styles.flowStep} key={step} role="listitem">
-              {index > 0 && <b aria-hidden="true">→</b>}
-              {step}
-            </span>
-          ))}
-        </div>
       </ContentSection>
       <CallToAction
         title="Got data and not sure where to start?"

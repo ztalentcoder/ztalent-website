@@ -89,6 +89,7 @@ model BusinessArea {
   slug        String        @unique @db.VarChar(150)
   summary     String?       @db.VarChar(300)
   description String        @db.Text
+  icon        String        @default("layers") @db.VarChar(40)
   imageUrl    String?       @db.VarChar(2048)
   isTechSolution Boolean    @default(false)
   status      ContentStatus
@@ -96,6 +97,7 @@ model BusinessArea {
   createdAt   DateTime      @default(now()) @db.Timestamptz(3)
   updatedAt   DateTime      @updatedAt @db.Timestamptz(3)
   services    Service[]
+  serviceCategories ServiceCategory[]
   projects    Project[]
 
   @@index([status, sortOrder])
@@ -106,6 +108,7 @@ model BusinessArea {
 model Service {
   id            String        @id @default(uuid()) @db.Uuid
   businessAreaId String       @db.Uuid
+  serviceCategoryId String?   @db.Uuid
   title         String        @db.VarChar(160)
   slug          String        @db.VarChar(180)
   summary       String?       @db.VarChar(300)
@@ -118,10 +121,31 @@ model Service {
   createdAt     DateTime      @default(now()) @db.Timestamptz(3)
   updatedAt     DateTime      @updatedAt @db.Timestamptz(3)
   businessArea  BusinessArea  @relation(fields: [businessAreaId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  serviceCategory ServiceCategory? @relation(fields: [serviceCategoryId, businessAreaId], references: [id, businessAreaId], onDelete: Restrict, onUpdate: Cascade)
 
   @@unique([businessAreaId, slug])
   @@index([businessAreaId, status, sortOrder])
+  @@index([serviceCategoryId, status, sortOrder])
   @@map("services")
+}
+
+model ServiceCategory {
+  id            String        @id @default(uuid()) @db.Uuid
+  businessAreaId String       @db.Uuid
+  name          String        @db.VarChar(120)
+  slug          String        @db.VarChar(140)
+  description   String?       @db.VarChar(500)
+  status        ContentStatus @default(DRAFT)
+  sortOrder     Int           @default(0)
+  createdAt     DateTime      @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime      @updatedAt @db.Timestamptz(3)
+  businessArea  BusinessArea  @relation(fields: [businessAreaId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  services      Service[]
+
+  @@unique([businessAreaId, slug])
+  @@unique([id, businessAreaId])
+  @@index([businessAreaId, status, sortOrder])
+  @@map("service_categories")
 }
 
 model Project {
@@ -132,6 +156,11 @@ model Project {
   summary       String        @db.VarChar(400)
   description   String        @db.Text
   imageUrl      String?       @db.VarChar(2048)
+  problemStatement String?    @db.Text
+  solution      String?       @db.Text
+  outcome       String?       @db.Text
+  liveUrl       String?       @db.VarChar(2048)
+  technologies  String[]      @default([]) @db.Text
   status        ContentStatus
   sortOrder     Int           @default(0)
   publishedAt   DateTime?     @db.Timestamptz(3)
@@ -139,10 +168,35 @@ model Project {
   updatedAt     DateTime      @updatedAt @db.Timestamptz(3)
   businessArea  BusinessArea? @relation(fields: [businessAreaId], references: [id], onDelete: SetNull, onUpdate: Cascade)
   testimonials  Testimonial[]
+  keyFeatures   ProjectKeyFeature[]
+  galleryImages ProjectGalleryImage[]
 
   @@index([status, publishedAt])
   @@index([businessAreaId, status])
   @@map("projects")
+}
+
+model ProjectKeyFeature {
+  id          String  @id @default(uuid()) @db.Uuid
+  projectId   String  @db.Uuid
+  title       String  @db.VarChar(180)
+  description String  @db.Text
+  sortOrder   Int     @default(0)
+  project     Project @relation(fields: [projectId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@index([projectId, sortOrder])
+  @@map("project_key_features")
+}
+
+model ProjectGalleryImage {
+  id        String  @id @default(uuid()) @db.Uuid
+  projectId String  @db.Uuid
+  imageUrl  String  @db.VarChar(2048)
+  sortOrder Int     @default(0)
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@index([projectId, sortOrder])
+  @@map("project_gallery_images")
 }
 
 model AcademicCourse {
@@ -205,33 +259,43 @@ model CourseEpisode {
 }
 
 model BlogCategory {
-  id          String     @id @default(uuid()) @db.Uuid
-  name        String     @db.VarChar(100)
-  slug        String     @unique @db.VarChar(120)
-  description String?    @db.VarChar(300)
-  createdAt   DateTime   @default(now()) @db.Timestamptz(3)
-  updatedAt   DateTime   @updatedAt @db.Timestamptz(3)
+  id          String        @id @default(uuid()) @db.Uuid
+  name        String        @db.VarChar(100)
+  slug        String        @unique @db.VarChar(120)
+  description String?       @db.VarChar(300)
+  status      ContentStatus @default(PUBLISHED)
+  sortOrder   Int           @default(0)
+  createdAt   DateTime      @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime      @updatedAt @db.Timestamptz(3)
   posts       BlogPost[]
 
+  @@index([status, sortOrder, name])
   @@map("blog_categories")
 }
 
 model BlogPost {
-  id            String        @id @default(uuid()) @db.Uuid
-  categoryId    String        @db.Uuid
-  title         String        @db.VarChar(200)
-  slug          String        @unique @db.VarChar(220)
-  excerpt       String?       @db.VarChar(500)
-  body          String        @db.Text
-  coverImageUrl String?       @db.VarChar(2048)
-  status        ContentStatus
-  publishedAt   DateTime?     @db.Timestamptz(3)
-  createdAt     DateTime      @default(now()) @db.Timestamptz(3)
-  updatedAt     DateTime      @updatedAt @db.Timestamptz(3)
-  category      BlogCategory  @relation(fields: [categoryId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  id                 String       @id @default(uuid()) @db.Uuid
+  categoryId         String       @db.Uuid
+  title              String       @db.VarChar(200)
+  slug               String       @unique @db.VarChar(220)
+  excerpt            String?      @db.VarChar(500)
+  body               String       @db.Text
+  coverImageUrl      String?      @db.VarChar(2048)
+  coverImageAlt      String?      @db.VarChar(300)
+  author             String?      @db.VarChar(180)
+  readingTimeMinutes Int?
+  isFeatured         Boolean      @default(false)
+  seoTitle           String?      @db.VarChar(180)
+  metaDescription    String?      @db.VarChar(300)
+  status             ContentStatus
+  publishedAt        DateTime?    @db.Timestamptz(3)
+  createdAt          DateTime     @default(now()) @db.Timestamptz(3)
+  updatedAt          DateTime     @updatedAt @db.Timestamptz(3)
+  category           BlogCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict, onUpdate: Cascade)
 
   @@index([status, publishedAt])
   @@index([categoryId, status])
+  @@index([status, isFeatured, publishedAt])
   @@map("blog_posts")
 }
 

@@ -53,6 +53,26 @@
   transition: background-color 140ms ease, transform 140ms ease;
 }
 
+.secondaryButton {
+  display: inline-flex;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 9px 14px;
+  background: var(--card);
+  color: var(--admin-link);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.secondaryButton:hover {
+  background: var(--soft);
+}
+
 .primaryButton:hover:not(:disabled),
 .pagination button:hover:not(:disabled) {
   background: var(--admin-action-hover);
@@ -99,6 +119,7 @@
 .formCard textarea:focus-visible,
 .formCard select:focus-visible,
 .primaryButton:focus-visible,
+.secondaryButton:focus-visible,
 .pagination button:focus-visible,
 .textButton:focus-visible,
 .dangerButton:focus-visible {
@@ -225,10 +246,270 @@
   min-width: 0;
 }
 
+.formHeadingActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.markdownField {
+  display: grid;
+  grid-column: 1 / -1;
+  gap: 7px;
+  min-width: 0;
+}
+
+.markdownLabel {
+  color: var(--ink);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.formCard .markdownField textarea {
+  min-width: 0;
+  min-height: 22rem;
+  padding: 0.8rem;
+}
+
+.blogPreview {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  grid-column: 1 / -1;
+  margin: 0 auto;
+  max-width: 860px;
+  overflow: hidden;
+  padding: clamp(18px, 4vw, 36px);
+  width: 100%;
+}
+
+.blogPreview > img {
+  display: block;
+  height: auto;
+  margin: 0 auto 1.5rem;
+  max-height: 420px;
+  max-width: 100%;
+  object-fit: contain;
+}
+
+.blogPreview h2 {
+  margin-bottom: 0.7rem;
+}
+
+.blogPreviewExcerpt {
+  color: var(--muted);
+  font-size: 1.1rem;
+}
+
+.blogPreviewMeta {
+  color: var(--muted);
+  font-size: 0.82rem;
+  margin: 0.8rem 0 1.8rem;
+}
+
 .fields {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 18px;
+}
+
+.formSection {
+  display: grid;
+  gap: 16px;
+  border-top: 1px solid var(--line);
+  padding-top: 22px;
+}
+
+.formSection > h3 {
+  margin: 0;
+  color: var(--ink);
+  font-size: 1.12rem;
+  font-weight: 750;
+}
+
+.fieldset {
+  min-width: 0;
+  margin: 0;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 16px;
+}
+
+.fieldset legend {
+  padding: 0 7px;
+  color: var(--ink);
+  font-size: 0.96rem;
+  font-weight: 700;
+}
+
+.projectFeatures,
+.projectGallery {
+  display: grid;
+  grid-column: 1 / -1;
+  gap: 14px;
+}
+
+.featureEditor {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 14px;
+}
+
+.editorItemHeading {
+  display: flex;
+  grid-column: 1 / -1;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+}
+
+.editorItemHeading h4 {
+  margin: 0;
+  color: var(--ink);
+  font-size: 0.94rem;
+}
+
+.editorItemHeading > span {
+  overflow: hidden;
+  color: var(--ink);
+  font-size: 0.88rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.editorItemActions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 6px;
+}
+
+.iconButton {
+  display: inline-grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--card);
+  color: var(--ink);
+  cursor: pointer;
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease;
+}
+
+.iconButton:hover:not(:disabled) {
+  border-color: var(--admin-link);
+  background: var(--soft);
+  color: var(--admin-link);
+}
+
+.iconButton:focus-visible,
+.projectAddButton:focus-visible,
+.galleryUpload:focus-within {
+  outline: 3px solid #7cc0f5;
+  outline-offset: 2px;
+}
+
+.iconButton:disabled,
+.projectAddButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.projectAddButton,
+.galleryUpload {
+  display: inline-flex;
+  width: fit-content;
+  min-height: 40px;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 8px 12px;
+  background: var(--card);
+  color: var(--admin-link);
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  transition: background-color 140ms ease, border-color 140ms ease;
+}
+
+.projectAddButton {
+  cursor: pointer;
+}
+
+.projectAddButton:hover:not(:disabled) {
+  border-color: var(--admin-link);
+  background: var(--soft);
+}
+
+.galleryUpload {
+  cursor: pointer;
+}
+
+.galleryUpload input {
+  max-width: 100%;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.82rem;
+}
+
+.galleryUpload input:disabled {
+  cursor: not-allowed;
+}
+
+.fieldHelp {
+  margin: -4px 0 0;
+  color: var(--muted);
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+
+.galleryEditor {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.galleryEditorItem {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.galleryEditorPreview {
+  display: grid;
+  aspect-ratio: 16 / 10;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 8px;
+  background: var(--soft);
+  color: var(--muted);
+  font-size: 0.82rem;
+  text-align: center;
+}
+
+.galleryEditorPreview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.galleryEditorItem progress {
+  width: 100%;
+  accent-color: var(--admin-link);
 }
 
 .field {
@@ -386,12 +667,30 @@
     gap: 14px;
   }
 
+  .formHeading {
+    align-items: flex-start;
+  }
+
+  .formHeadingActions {
+    flex-direction: column-reverse;
+    align-items: flex-end;
+  }
+
   .heading .primaryButton {
     max-width: 100%;
   }
 
   .fields {
     grid-template-columns: 1fr;
+  }
+
+  .featureEditor,
+  .galleryEditor {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .editorItemHeading {
+    align-items: flex-start;
   }
 
   .tableWrap {

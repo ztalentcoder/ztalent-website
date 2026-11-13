@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { Mail, MapPin, Phone } from 'lucide-react';
 import logo from '../../assets/ztalent-logo.png';
 import SocialLinks from '../navigation/SocialLinks.jsx';
 import { usePublicCompany } from '../../context/PublicContentContext.jsx';
+import { DEFAULT_COMPANY_CONTACT } from '../../constants/companyProfile.js';
 import { getPublicImageUrl } from '../../services/publicContentApi.js';
 import styles from './Footer.module.css';
 
@@ -23,9 +25,8 @@ export default function Footer() {
   const { company } = usePublicCompany();
   const [logoFailed, setLogoFailed] = useState(false);
   const logoUrl = getPublicImageUrl(company?.logoUrl);
-  const email = company?.email || 'ztalentcoder@gmail.com';
-  const phone = company?.phone || '+255 618 429 083';
-  const phoneHref = phone.replace(/[^\d+]/g, '');
+  const { email, phone, location } = DEFAULT_COMPANY_CONTACT;
+  const phoneHref = phone?.replace(/[^\d+]/g, '');
 
   return (
     <footer className={styles.footer}>
@@ -55,9 +56,18 @@ export default function Footer() {
 
           <div className={styles.linkColumn}>
             <h2>Contact</h2>
-            <a href={`mailto:${email}`}>{email}</a>
-            <a href={`tel:${phoneHref}`}>{phone}</a>
-            {company?.location && <Link to="/contact">{company.location}</Link>}
+            <div className={styles.contactItem}>
+              <Mail aria-hidden="true" />
+              <a href={`mailto:${email}`}>{email}</a>
+            </div>
+            <div className={styles.contactItem}>
+              <Phone aria-hidden="true" />
+              <a href={`tel:${phoneHref}`}>{phone}</a>
+            </div>
+            <div className={styles.contactItem}>
+              <MapPin aria-hidden="true" />
+              <Link to="/contact">{location}</Link>
+            </div>
           </div>
         </div>
         <div className={styles.copyright}>

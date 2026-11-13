@@ -24,7 +24,10 @@ function renderLayout({ path = '/admin/dashboard', role = 'SUPER_ADMIN' } = {}) 
         <Route path="/admin" element={<AdminLayout />}>
           <Route path="dashboard" element={<p>Dashboard content</p>} />
           <Route path="company-profile" element={<p>Company content</p>} />
+          <Route path="academic" element={<p>Academic content</p>} />
           <Route path="tech-solutions" element={<p>Tech Solutions content</p>} />
+          <Route path="data-ai" element={<p>Data & AI content</p>} />
+          <Route path="settings" element={<p>Settings content</p>} />
           <Route path="manage/:resource" element={<p>Managed content</p>} />
           <Route path="login" element={<p>Login page</p>} />
         </Route>
@@ -45,28 +48,26 @@ afterEach(() => {
 });
 
 describe('AdminLayout navigation', () => {
-  it('uses the existing routes and expands only the active dropdown group', async () => {
+  it('uses the approved routes and expands only the active dropdown group', async () => {
     const user = userEvent.setup();
-    renderLayout({ path: '/admin/manage/services' });
+    renderLayout({ path: '/admin/manage/business-areas' });
 
-    const servicesGroup = screen.getByRole('button', { name: 'Services' });
     const websiteGroup = screen.getByRole('button', { name: 'Website Content' });
-    expect(servicesGroup).toHaveAttribute('aria-expanded', 'true');
-    expect(websiteGroup).toHaveAttribute('aria-expanded', 'false');
-    expect(screen.getByRole('link', { name: 'Data & AI' })).toHaveAttribute('href', '/admin/manage/services');
-    expect(screen.getByRole('link', { name: 'Academic' })).toHaveAttribute('href', '/admin/manage/academic-courses');
+    expect(screen.getByRole('link', { name: 'Business Areas' })).toHaveAttribute('href', '/admin/manage/business-areas');
+    expect(screen.getByRole('link', { name: 'Academic' })).toHaveAttribute('href', '/admin/academic');
     expect(screen.getByRole('link', { name: 'Tech Solutions' })).toHaveAttribute('href', '/admin/tech-solutions');
+    expect(screen.getByRole('link', { name: 'Data & AI' })).toHaveAttribute('href', '/admin/data-ai');
+    expect(websiteGroup).toHaveAttribute('aria-expanded', 'false');
 
     await user.click(websiteGroup);
     expect(websiteGroup).toHaveAttribute('aria-expanded', 'true');
-    expect(servicesGroup).toHaveAttribute('aria-expanded', 'false');
     await user.click(websiteGroup);
     expect(websiteGroup).toHaveAttribute('aria-expanded', 'false');
 
     expect(screen.getByRole('link', { name: 'Dashboard' })).toHaveAttribute('href', '/admin/dashboard');
     expect(screen.getByRole('link', { name: 'People' })).toHaveAttribute('href', '/admin/manage/team-members');
     expect(screen.getByRole('link', { name: /Inquiries/ })).toHaveAttribute('href', '/admin/manage/contact-messages');
-    expect(screen.getByRole('button', { name: /Settings/ })).toBeDisabled();
+    expect(screen.getByRole('link', { name: 'Settings' })).toHaveAttribute('href', '/admin/settings');
     const navigation = within(screen.getByRole('navigation', { name: 'Admin navigation' }));
     const routes = navigation.getAllByRole('link', { hidden: true }).map((link) => link.getAttribute('href'));
     expect(routes).toEqual([
@@ -74,27 +75,29 @@ describe('AdminLayout navigation', () => {
       '/admin/company-profile',
       '/admin/manage/about-page',
       '/admin/manage/site-statistics',
-      '/admin/manage/academic-courses',
+      '/admin/manage/business-areas',
+      '/admin/academic',
       '/admin/tech-solutions',
-      '/admin/manage/services',
+      '/admin/data-ai',
       '/admin/manage/projects',
       '/admin/manage/testimonials',
       '/admin/manage/blog-posts',
       '/admin/manage/blog-categories',
       '/admin/manage/team-members',
       '/admin/manage/contact-messages',
+      '/admin/settings',
     ]);
     expect(new Set(routes).size).toBe(routes.length);
+    expect(screen.queryByRole('link', { name: 'Services' })).not.toBeInTheDocument();
   });
 
-  it('activates the dedicated Tech Solutions destination and closes mobile navigation after selecting it', async () => {
+  it('activates the Tech Solutions destination and closes mobile navigation after selecting it', async () => {
     const user = userEvent.setup();
     Object.defineProperty(window, 'innerWidth', { configurable: true, value: 375 });
     renderLayout({ path: '/admin/tech-solutions' });
     const link = screen.getByRole('link', { name: 'Tech Solutions' });
     expect(link).toHaveAttribute('href', '/admin/tech-solutions');
-    expect(link.className).toContain('activeSubmenuLink');
-    expect(screen.getByRole('button', { name: 'Services' })).toHaveAttribute('aria-expanded', 'true');
+    expect(link.className).toContain('activeLink');
 
     await user.click(screen.getByRole('button', { name: 'Open admin navigation' }));
     await user.click(link);

@@ -46,7 +46,7 @@ describe('CMS delete confirmation', () => {
     render(<MemoryRouter><AdminContentPage resource="business-areas" /></MemoryRouter>);
 
     await user.click(await screen.findByRole('button', { name: 'Delete' }));
-    expect(await screen.findByRole('dialog', { name: 'Delete service category?' })).toBeInTheDocument();
+    expect(await screen.findByRole('dialog', { name: 'Delete business area?' })).toBeInTheDocument();
     expect(api.deleteAdminContent).not.toHaveBeenCalled();
 
     await user.click(screen.getByRole('button', { name: 'Cancel' }));
@@ -56,6 +56,6 @@ describe('CMS delete confirmation', () => {
     await user.click(screen.getByRole('button', { name: 'Delete' }));
     await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Delete' }));
     await waitFor(() => expect(api.deleteAdminContent).toHaveBeenCalledWith('business-areas', businessArea.id));
-    expect(await screen.findByRole('status')).toHaveTextContent('Service category deleted.');
+    expect(await screen.findByRole('status')).toHaveTextContent('Business area deleted.');
   });
 });

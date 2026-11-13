@@ -71,7 +71,7 @@
   min-height: 180px;
   overflow: hidden;
   place-items: center;
-  background: linear-gradient(135deg, #eaf3fb, #dceaf6);
+  background: linear-gradient(135deg, var(--soft), var(--card));
 }
 
 .image img {
@@ -82,7 +82,7 @@
 }
 
 .imageFallback {
-  color: #3872a5;
+  color: var(--link-color);
   font-family: Sora, "Plus Jakarta Sans", system-ui, sans-serif;
   font-size: 3rem;
   font-weight: 800;
@@ -105,7 +105,7 @@
 }
 
 .category {
-  color: var(--deep-blue);
+  color: var(--link-color);
   font-size: 0.78rem;
   font-weight: 750;
 }
@@ -178,7 +178,7 @@
   border: 1px solid transparent;
   border-radius: 8px;
   padding: 8px 10px;
-  color: #b42318;
+  color: var(--youtube);
   font-size: 0.79rem;
   font-weight: 750;
   text-decoration: none;
@@ -186,9 +186,9 @@
 }
 
 .youtubeLink:hover {
-  border-color: #f0c5c1;
-  background: #fff1f0;
-  color: #8f1b13;
+  border-color: var(--youtube-border);
+  background: var(--youtube-soft);
+  color: var(--youtube-hover);
   text-decoration: none;
 }
 

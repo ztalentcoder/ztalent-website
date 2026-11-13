@@ -97,7 +97,7 @@
   border: 0;
   margin-top: 8px;
   background: transparent;
-  color: var(--blue);
+  color: var(--link-color);
   cursor: pointer;
   font: inherit;
   font-weight: 700;
@@ -139,7 +139,7 @@
 }
 
 .meetTeam a {
-  color: var(--blue);
+  color: var(--link-color);
   font-weight: 700;
   text-decoration: none;
 }
@@ -208,7 +208,7 @@
 
 .eyebrow {
   margin-bottom: 4px;
-  color: var(--blue) !important;
+  color: var(--link-color) !important;
   font-size: 0.81rem !important;
   font-weight: 700;
 }
@@ -219,7 +219,7 @@
 
 .cardFooter a,
 .textLink {
-  color: var(--blue);
+  color: var(--link-color);
   font-weight: 700;
   text-decoration: none;
 }
@@ -237,7 +237,7 @@
   gap: 18px;
   border-radius: 22px;
   padding: 40px;
-  background: linear-gradient(100deg, #1e90e8, #1257c4);
+  background: linear-gradient(100deg, var(--blue-action), #1257c4);
   color: #ffffff;
 }
 
@@ -280,7 +280,7 @@
   height: 22px;
   place-items: center;
   border-radius: 50%;
-  background: var(--blue);
+  background: var(--blue-action);
   color: #ffffff;
   content: "✓";
   font-size: 0.81rem;
@@ -300,7 +300,7 @@
   gap: 12px;
   border-radius: 999px;
   padding: 13px 22px;
-  background: var(--blue);
+  background: var(--blue-action);
   color: #ffffff;
   font-size: 0.94rem;
   font-weight: 700;
@@ -311,7 +311,7 @@
 }
 
 .flow b {
-  color: var(--blue);
+  color: var(--link-color);
   font-size: 1.25rem;
 }
 
@@ -337,7 +337,7 @@
 .filter:hover,
 .filterActive {
   border-color: var(--blue);
-  background: var(--blue);
+  background: var(--blue-action);
   color: #ffffff;
 }
 
@@ -364,7 +364,7 @@
   place-items: center;
   border-radius: 50%;
   margin: 0 auto 14px;
-  background: linear-gradient(135deg, var(--blue), var(--navy));
+  background: linear-gradient(135deg, var(--blue-action), var(--navy));
   color: #ffffff;
   font-family: Sora, sans-serif;
   font-size: 1.75rem;
@@ -411,7 +411,7 @@
 }
 
 .successMessage {
-  color: var(--blue);
+  color: var(--link-color);
   font-weight: 700;
 }
 
@@ -426,7 +426,7 @@
 }
 
 .contactDetails a:hover {
-  color: var(--blue);
+  color: var(--link-color);
   text-decoration: underline;
 }
 

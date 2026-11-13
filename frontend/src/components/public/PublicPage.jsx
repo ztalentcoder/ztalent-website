@@ -2,10 +2,11 @@ import Button from '../common/Button.jsx';
 import WaveDivider from './WaveDivider.jsx';
 import styles from './PublicPage.module.css';
 
-export function PageHero({ title, description, eyebrow, style }) {
+export function PageHero({ title, description, eyebrow, style, beforeTitle }) {
   return (
-    <section className={styles.hero} style={style}>
+    <section className={styles.hero} style={style} data-motion="hero">
       <div className={styles.container}>
+        {beforeTitle}
         {eyebrow && <p className={styles.heroEyebrow}>{eyebrow}</p>}
         <h1>{title}</h1>
         {description && <p>{description}</p>}
@@ -20,6 +21,7 @@ export function ContentSection({ children, soft = false, className = '', id }) {
     <section
       className={`${styles.section}${soft ? ` ${styles.softSection}` : ''}${className ? ` ${className}` : ''}`}
       id={id}
+      data-motion="section"
     >
       <div className={styles.container}>{children}</div>
     </section>
@@ -27,12 +29,12 @@ export function ContentSection({ children, soft = false, className = '', id }) {
 }
 
 export function CardGrid({ children, className = '' }) {
-  return <div className={`${styles.grid}${className ? ` ${className}` : ''}`}>{children}</div>;
+  return <div className={`${styles.grid}${className ? ` ${className}` : ''}`} data-motion-stagger>{children}</div>;
 }
 
 export function InfoCard({ title, description, eyebrow, children, footer, className = '' }) {
   return (
-    <article className={`${styles.card}${className ? ` ${className}` : ''}`}>
+    <article className={`${styles.card}${className ? ` ${className}` : ''}`} data-motion="card">
       {eyebrow && <p className={styles.eyebrow}>{eyebrow}</p>}
       {title && <h3>{title}</h3>}
       {description && <p>{description}</p>}

@@ -12,7 +12,7 @@
 
 .eyebrow {
   margin: 0 0 4px;
-  color: var(--blue);
+  color: var(--link-color);
   font-size: 0.81rem;
   font-weight: 700;
 }

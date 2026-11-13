@@ -1,0 +1,147 @@
+.profileGroups {
+  display: grid;
+  min-width: 0;
+  gap: 20px;
+}
+
+.profileCard {
+  display: grid;
+  min-width: 0;
+  gap: 22px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 22px;
+  background: var(--card);
+  box-shadow: 0 4px 14px rgb(8 34 61 / 6%);
+}
+
+.profileHeading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 16px;
+}
+
+.profileHeading h2 {
+  color: var(--ink);
+  font-size: 1.12rem;
+}
+
+.profileHeading p {
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 0.86rem;
+  line-height: 1.55;
+}
+
+.profileFields {
+  gap: 22px;
+}
+
+.profileFields label {
+  gap: 9px;
+}
+
+.profileFields textarea {
+  min-height: 168px;
+}
+
+.profileActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+  border-top: 1px solid var(--line);
+  padding-top: 16px;
+}
+
+.profileActions button {
+  min-height: 42px;
+}
+
+.profileActions button:focus-visible {
+  outline: 3px solid #7cc0f5;
+  outline-offset: 2px;
+}
+
+.socialPlatformCard {
+  display: grid;
+  min-width: 0;
+  gap: 10px;
+  margin-top: 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 18px;
+  background: var(--card);
+}
+
+.socialPlatformCard > label {
+  color: var(--ink);
+  font-size: 0.94rem;
+  font-weight: 650;
+}
+
+.socialPlatformControls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 10px;
+}
+
+.socialPlatformControls input {
+  width: 100%;
+  min-width: 0;
+  min-height: 42px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 9px 12px;
+  color: var(--ink);
+  background: #fff;
+}
+
+.socialPlatformControls input:focus-visible {
+  outline: 3px solid #7cc0f5;
+  outline-offset: 2px;
+}
+
+.duplicateWarning {
+  margin: 0;
+  color: #8a4b08;
+  font-size: 0.86rem;
+}
+
+.additionalLinksHeading {
+  margin-top: 24px;
+  color: var(--ink);
+  font-size: 1rem;
+}
+
+@media (max-width: 640px) {
+  .profileCard {
+    gap: 18px;
+    padding: 17px;
+  }
+
+  .profileFields {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 18px;
+  }
+
+  .profileActions {
+    justify-content: stretch;
+  }
+
+  .profileActions button {
+    flex: 1 1 130px;
+  }
+
+  .socialPlatformControls {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .socialPlatformControls button {
+    width: 100%;
+  }
+}

@@ -1,19 +1,25 @@
 import { createServer } from 'node:http';
+import { formatStartupFailure } from './utils/startup-diagnostics.js';
 
 async function startServer() {
   let prisma;
   let server;
+  let config;
+  let startupStage = 'environment configuration';
 
   try {
-    const { config } = await import('./config/environment.js');
+    ({ config } = await import('./config/environment.js'));
+    startupStage = 'application initialization';
     const [{ default: app }, database] = await Promise.all([
       import('./app.js'),
       import('./config/database.js'),
     ]);
 
     prisma = database.prisma;
+    startupStage = 'database connection';
     await prisma.$connect();
 
+    startupStage = 'HTTP server binding';
     server = createServer(app);
     await new Promise((resolve, reject) => {
       server.once('error', reject);
@@ -53,21 +59,33 @@ async function startServer() {
     process.on('SIGINT', () => shutdown('SIGINT'));
     process.on('SIGTERM', () => shutdown('SIGTERM'));
   } catch (error) {
+    const diagnosticOptions = {
+      stage: startupStage,
+      port: config?.port,
+      databaseUrl: config?.databaseUrl,
+      sensitiveValues: getSensitiveEnvironmentValues(),
+    };
+    console.error(formatStartupFailure(error, diagnosticOptions));
+
     if (prisma) {
       try {
         await prisma.$disconnect();
-      } catch {
-        console.error('Failed to disconnect from the database cleanly.');
+      } catch (cleanupError) {
+        console.error(formatStartupFailure(cleanupError, {
+          ...diagnosticOptions,
+          stage: 'Prisma cleanup after startup failure',
+        }));
       }
     }
 
-    if (error?.code === 'BACKEND_CONFIG_INVALID') {
-      console.error(error.message);
-    } else {
-      console.error('Backend startup failed. Check the database connection and server configuration.');
-    }
     process.exitCode = 1;
   }
+}
+
+function getSensitiveEnvironmentValues() {
+  return Object.entries(process.env)
+    .filter(([name, value]) => value && /(?:PASSWORD|TOKEN|SECRET|API[_-]?KEY|ACCESS[_-]?KEY|CREDENTIAL|PRIVATE[_-]?KEY|AUTHORIZATION)/i.test(name))
+    .map(([, value]) => value);
 }
 
 startServer();
