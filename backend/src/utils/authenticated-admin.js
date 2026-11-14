@@ -21,6 +21,7 @@ export async function getAuthenticatedAdmin(request) {
       adminUser: {
         select: {
           id: true,
+          username: true,
           name: true,
           email: true,
           role: true,
@@ -45,6 +46,6 @@ export async function getAuthenticatedAdmin(request) {
     data: { lastSeenAt: now },
   });
 
-  const { id, name, email, role } = session.adminUser;
-  return { id, name, email, role };
+  const { id, username, name, email, role } = session.adminUser;
+  return { id, username, name, email, role };
 }

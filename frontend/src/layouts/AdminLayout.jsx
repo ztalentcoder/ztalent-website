@@ -147,7 +147,8 @@ export default function AdminLayout() {
     }
   }
 
-  const initials = admin?.name?.trim().split(/\s+/).slice(0, 2).map((part) => part[0]).join('').toUpperCase() || 'A';
+  const displayName = admin?.username || admin?.name || 'Admin';
+  const initials = displayName.trim().split(/\s+/).slice(0, 2).map((part) => part[0]).join('').toUpperCase() || 'A';
 
   return (
     <div
@@ -174,8 +175,8 @@ export default function AdminLayout() {
           <div className={styles.account}>
             <span className={styles.avatar} aria-hidden="true">{initials}</span>
             <div className={styles.identity}>
-              <strong>{admin.name}</strong>
-              <span className={styles.role}>{admin.role === 'SUPER_ADMIN' ? 'Super Admin' : 'Editor'}</span>
+              <strong>{displayName}</strong>
+              <span className={styles.role}>{admin.role === 'SUPER_ADMIN' ? 'Super Admin' : 'Assistant Admin'}</span>
             </div>
           </div>
         </header>
@@ -194,10 +195,6 @@ export default function AdminLayout() {
           className={`${styles.sidebar} ${collapsed ? styles.collapsed : ''} ${mobileOpen ? styles.mobileOpen : ''}`}
           aria-label="Admin sidebar"
         >
-          <div className={styles.sidebarBrand}>
-            <span className={styles.brandMark} aria-hidden="true">Z</span>
-            <span className={styles.sidebarBrandText}>Ztalent Coder</span>
-          </div>
           <nav className={styles.navigation} aria-label="Admin navigation">
             {menuRows.map((row) => {
               if (row.type === 'link') {

@@ -34,7 +34,13 @@ describe('same-origin API proxy', () => {
   it('verifies admin sessions through the same-origin proxy with cookies enabled', async () => {
     const payload = {
       status: 'success',
-      admin: { id: 'admin-id', name: 'Admin', email: 'admin@example.com', role: 'SUPER_ADMIN' },
+      admin: {
+        id: 'admin-id',
+        username: 'admin',
+        name: 'Admin',
+        email: 'admin@example.com',
+        role: 'SUPER_ADMIN',
+      },
     };
     fetchMock.mockResolvedValue({ ok: true, json: async () => payload });
     const { getCurrentAdmin } = await import('./adminAuthApi.js');

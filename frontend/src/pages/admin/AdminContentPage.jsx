@@ -32,6 +32,8 @@ const pageSize = 10;
 const PROJECT_FORM_SECTIONS = ['Basic Information', 'Project Details', 'Project Gallery'];
 const MAX_PROJECT_GALLERY_IMAGES = 20;
 const EMPTY_PROJECT_ITEMS = Object.freeze([]);
+const COMPANY_HERO_IMAGE_FIELDS = ['homeHeroImage1Url', 'homeHeroImage2Url', 'homeHeroImage3Url'];
+const COMPANY_PROFILE_IMAGE_FIELDS = ['logoUrl', 'homeIntroImageUrl', ...COMPANY_HERO_IMAGE_FIELDS];
 let nextProjectEditorId = 0;
 
 function getErrorMessage(error) {
@@ -1013,6 +1015,8 @@ function CompanyProfileEditor() {
   const [logoProgress, setLogoProgress] = useState(null);
   const [homeIntroImageFile, setHomeIntroImageFile] = useState(null);
   const [homeIntroImageProgress, setHomeIntroImageProgress] = useState(null);
+  const [heroImageFiles, setHeroImageFiles] = useState({});
+  const [heroImageProgress, setHeroImageProgress] = useState({});
 
   useEffect(() => {
     let active = true;
@@ -1047,6 +1051,7 @@ function CompanyProfileEditor() {
     return fieldNames.some((name) => {
       if (name === 'logoUrl' && logoFile) return true;
       if (name === 'homeIntroImageUrl' && homeIntroImageFile) return true;
+      if (COMPANY_HERO_IMAGE_FIELDS.includes(name) && heroImageFiles[name]) return true;
       return (profile[name] ?? '') !== (savedProfile?.[name] ?? '');
     });
   }
@@ -1063,6 +1068,14 @@ function CompanyProfileEditor() {
     if (fieldNames.includes('homeIntroImageUrl')) {
       setHomeIntroImageFile(null);
       setHomeIntroImageProgress(null);
+    }
+    if (fieldNames.some((name) => COMPANY_HERO_IMAGE_FIELDS.includes(name))) {
+      setHeroImageFiles((current) => Object.fromEntries(
+        Object.entries(current).filter(([name]) => !fieldNames.includes(name)),
+      ));
+      setHeroImageProgress((current) => Object.fromEntries(
+        Object.entries(current).filter(([name]) => !fieldNames.includes(name)),
+      ));
     }
     setError('');
     setNotice('Unsaved company profile changes discarded.');
@@ -1081,27 +1094,50 @@ function CompanyProfileEditor() {
       const body = Object.fromEntries(fieldNames
         .filter((key) => (profile[key] ?? '') !== (savedProfile?.[key] ?? ''))
         .map((key) => [key, profile[key] === '' && key !== 'name' ? null : profile[key]]));
-      if (logoFile) {
-        const image = await uploadAdminImage('company-profile', logoFile, setLogoProgress);
+      const imageFiles = {
+        logoUrl: logoFile,
+        homeIntroImageUrl: homeIntroImageFile,
+        ...heroImageFiles,
+      };
+      for (const fieldName of fieldNames) {
+        if (!imageFiles[fieldName]) continue;
+        const progressCallbacks = {
+          logoUrl: setLogoProgress,
+          homeIntroImageUrl: setHomeIntroImageProgress,
+        };
+        const onProgress = progressCallbacks[fieldName]
+          ?? ((progress) => setHeroImageProgress((current) => ({ ...current, [fieldName]: progress })));
+        const image = await uploadAdminImage('company-profile', imageFiles[fieldName], onProgress);
         uploadedImageUrls.push(image.url);
-        body.logoUrl = image.url;
-      }
-      if (homeIntroImageFile) {
-        const image = await uploadAdminImage('company-profile', homeIntroImageFile, setHomeIntroImageProgress);
-        uploadedImageUrls.push(image.url);
-        body.homeIntroImageUrl = image.url;
+        body[fieldName] = image.url;
       }
       const response = await patchCompanyProfile(body);
       saved = true;
       const updatedProfile = withCompanyProfileDefaults(response.item);
-      setProfile(updatedProfile);
+      setProfile((current) => ({
+        ...current,
+        ...Object.fromEntries(fieldNames.map((name) => [name, updatedProfile[name]])),
+      }));
       setSavedProfile(updatedProfile);
-      setLogoFile(null);
-      setLogoProgress(null);
-      setHomeIntroImageFile(null);
-      setHomeIntroImageProgress(null);
-      const previousImages = ['logoUrl', 'homeIntroImageUrl']
-        .map((key) => Object.hasOwn(body, key) && body[key] !== savedProfile?.[key] ? savedProfile?.[key] : null)
+      if (fieldNames.includes('logoUrl')) {
+        setLogoFile(null);
+        setLogoProgress(null);
+      }
+      if (fieldNames.includes('homeIntroImageUrl')) {
+        setHomeIntroImageFile(null);
+        setHomeIntroImageProgress(null);
+      }
+      if (fieldNames.some((name) => COMPANY_HERO_IMAGE_FIELDS.includes(name))) {
+        setHeroImageFiles((current) => Object.fromEntries(
+          Object.entries(current).filter(([name]) => !fieldNames.includes(name)),
+        ));
+        setHeroImageProgress((current) => Object.fromEntries(
+          Object.entries(current).filter(([name]) => !fieldNames.includes(name)),
+        ));
+      }
+      const previousImages = COMPANY_PROFILE_IMAGE_FIELDS
+        .filter((key) => fieldNames.includes(key) && Object.hasOwn(body, key) && body[key] !== savedProfile?.[key])
+        .map((key) => savedProfile?.[key])
         .filter(Boolean);
       const cleanupFailures = await cleanupImages(previousImages);
       setNotice(`${groupLabel} saved.${cleanupFailures ? ' A previous image could not be removed; contact an administrator to retry cleanup.' : ''}`);
@@ -1214,6 +1250,9 @@ function CompanyProfileEditor() {
     { name: 'hours', label: 'Business hours', maxLength: 160 },
     { name: 'logoUrl', label: 'Company logo', type: 'image', resource: 'company-profile' },
     { name: 'homeIntroImageUrl', label: 'Home intro image', type: 'image', resource: 'company-profile' },
+    { name: 'homeHeroImage1Url', label: 'Hero Image 1', type: 'image', resource: 'company-profile' },
+    { name: 'homeHeroImage2Url', label: 'Hero Image 2', type: 'image', resource: 'company-profile' },
+    { name: 'homeHeroImage3Url', label: 'Hero Image 3', type: 'image', resource: 'company-profile' },
   ];
   const profileGroups = [
     {
@@ -1231,8 +1270,8 @@ function CompanyProfileEditor() {
     {
       id: 'brand',
       title: 'Brand assets',
-      description: 'Update the company logo and the image used in the home-page introduction.',
-      fields: ['logoUrl', 'homeIntroImageUrl'],
+      description: 'Update the company logo, home-page introduction image, and each hero slider image independently.',
+      fields: COMPANY_PROFILE_IMAGE_FIELDS,
     },
   ];
 
@@ -1269,13 +1308,19 @@ function CompanyProfileEditor() {
                     value={field.name === 'homeIntroImageUrl'
                       ? profile?.homeIntroImageUrl || '/images/image1.jpg'
                       : profile?.[field.name] ?? ''}
-                    file={field.name === 'homeIntroImageUrl' ? homeIntroImageFile : field.name === 'logoUrl' ? logoFile : undefined}
+                    file={field.name === 'homeIntroImageUrl'
+                      ? homeIntroImageFile
+                      : field.name === 'logoUrl' ? logoFile : heroImageFiles[field.name]}
                     uploadProgress={field.name === 'homeIntroImageUrl'
                       ? homeIntroImageProgress
-                      : field.name === 'logoUrl' ? logoProgress : undefined}
+                      : field.name === 'logoUrl' ? logoProgress : heroImageProgress[field.name]}
                     onFileChange={field.name === 'homeIntroImageUrl'
                       ? setHomeIntroImageFile
-                      : field.name === 'logoUrl' ? setLogoFile : undefined}
+                      : field.name === 'logoUrl'
+                        ? setLogoFile
+                        : COMPANY_HERO_IMAGE_FIELDS.includes(field.name)
+                          ? (file) => setHeroImageFiles((current) => ({ ...current, [field.name]: file }))
+                          : undefined}
                     onChange={(value) => setProfile((current) => ({ ...current, [field.name]: value }))}
                   />
                 ))}

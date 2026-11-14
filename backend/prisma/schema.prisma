@@ -35,6 +35,7 @@ enum CourseLevel {
 
 enum AdminRole {
   SUPER_ADMIN
+  ASSISTANT_ADMIN
   EDITOR
 }
 
@@ -50,6 +51,9 @@ model CompanyProfile {
   hours              String?      @db.VarChar(160)
   logoUrl            String?      @db.VarChar(2048)
   homeIntroImageUrl  String?      @db.VarChar(2048)
+  homeHeroImage1Url  String?      @db.VarChar(2048)
+  homeHeroImage2Url  String?      @db.VarChar(2048)
+  homeHeroImage3Url  String?      @db.VarChar(2048)
   createdAt          DateTime     @default(now()) @db.Timestamptz(3)
   updatedAt          DateTime     @updatedAt @db.Timestamptz(3)
   socialLinks        SocialLink[]
@@ -366,7 +370,9 @@ model SiteStatistic {
 model AdminUser {
   id          String        @id @default(uuid()) @db.Uuid
   /// Normalize to lowercase in the application; a PostgreSQL CHECK enforces lowercase values.
-  email       String        @unique @db.VarChar(320)
+  username    String        @unique @db.VarChar(64)
+  /// Normalize to lowercase in the application; a PostgreSQL CHECK enforces lowercase values.
+  email       String?       @unique @db.VarChar(320)
   passwordHash String       @db.VarChar(255)
   name        String        @db.VarChar(160)
   role        AdminRole

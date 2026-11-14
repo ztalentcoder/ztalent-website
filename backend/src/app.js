@@ -6,6 +6,7 @@ import { errorHandler } from './middleware/error-handler.js';
 import { notFound } from './middleware/not-found.js';
 import { securityHeaders } from './middleware/security-headers.js';
 import { createAdminAuthRouter } from './routes/admin-auth.routes.js';
+import { createAdminAccountsRouter } from './routes/admin-accounts.routes.js';
 import { createAdminCmsRouter } from './routes/admin-cms.routes.js';
 import { createAdminImagesRouter, createPublicImagesRouter } from './routes/admin-images.routes.js';
 import { createContactRouter } from './routes/contact.routes.js';
@@ -33,6 +34,7 @@ export function createApp({
   app.use('/api/health', healthRouter);
   app.use('/api/public', createPublicContentRouter());
   app.use('/api/admin/auth', createAdminAuthRouter(adminLoginRateLimit));
+  app.use('/api/admin', createAdminAccountsRouter());
   app.use('/api/admin/images', createAdminImagesRouter({
     imageStorage: actualImageStorage,
     ...(imageRateLimit ? { uploadRateLimit: imageRateLimit } : {}),

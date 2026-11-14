@@ -10,6 +10,7 @@ const sessionToken = 'c'.repeat(64);
 const sessionTokenHash = hashSessionToken(sessionToken);
 const admin = {
   id: 'admin-id',
+  username: 'admin',
   name: 'Admin User',
   email: 'admin@example.com',
   role: 'SUPER_ADMIN',
@@ -78,6 +79,7 @@ test('valid session attaches only safe admin fields, updates last-seen, and call
     assert.deepEqual(JSON.parse(responseText), {
       admin: {
         id: admin.id,
+        username: admin.username,
         name: admin.name,
         email: admin.email,
         role: admin.role,
@@ -95,6 +97,7 @@ test('valid session attaches only safe admin fields, updates last-seen, and call
         adminUser: {
           select: {
             id: true,
+            username: true,
             name: true,
             email: true,
             role: true,

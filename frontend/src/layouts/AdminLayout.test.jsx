@@ -68,6 +68,8 @@ describe('AdminLayout navigation', () => {
     expect(screen.getByRole('link', { name: 'People' })).toHaveAttribute('href', '/admin/manage/team-members');
     expect(screen.getByRole('link', { name: /Inquiries/ })).toHaveAttribute('href', '/admin/manage/contact-messages');
     expect(screen.getByRole('link', { name: 'Settings' })).toHaveAttribute('href', '/admin/settings');
+    expect(within(screen.getByRole('complementary', { name: 'Admin sidebar' }))
+      .queryByText('Ztalent Coder', { exact: true })).not.toBeInTheDocument();
     const navigation = within(screen.getByRole('navigation', { name: 'Admin navigation' }));
     const routes = navigation.getAllByRole('link', { hidden: true }).map((link) => link.getAttribute('href'));
     expect(routes).toEqual([
@@ -117,6 +119,7 @@ describe('AdminLayout navigation', () => {
     api.getAdminDashboard.mockClear();
     renderLayout({ role: 'EDITOR' });
     expect(screen.queryByRole('link', { name: /Inquiries/ })).not.toBeInTheDocument();
+    expect(screen.getByText('Assistant Admin')).toBeInTheDocument();
     expect(api.getAdminDashboard).not.toHaveBeenCalled();
   });
 

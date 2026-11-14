@@ -147,45 +147,12 @@
   height: 100dvh;
   grid-column: 1;
   grid-row: 1 / 4;
-  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-rows: minmax(0, 1fr) auto;
   overflow: visible;
-  padding: 20px 12px 14px;
+  padding: 14px 12px;
   background: #08223d;
   color: #e6edf6;
   transition: width 180ms ease, transform 180ms ease;
-}
-
-.sidebarBrand {
-  display: flex;
-  min-height: 48px;
-  align-items: center;
-  gap: 11px;
-  overflow: hidden;
-  padding: 0 8px 17px;
-  color: #ffffff;
-  font-family: Sora, "Plus Jakarta Sans", system-ui, sans-serif;
-  font-size: 0.88rem;
-  font-weight: 800;
-  letter-spacing: -0.025em;
-  white-space: nowrap;
-}
-
-.brandMark {
-  display: grid;
-  width: 32px;
-  height: 32px;
-  flex: 0 0 auto;
-  place-items: center;
-  border: 1px solid rgb(255 255 255 / 19%);
-  border-radius: 10px;
-  background: #123b62;
-  color: #d7edff;
-  font-size: 1rem;
-}
-
-.sidebarBrandText {
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .navigation {
@@ -425,13 +392,6 @@
   color: #ffffff;
 }
 
-.collapsed .sidebarBrand {
-  justify-content: center;
-  padding-right: 0;
-  padding-left: 0;
-}
-
-.collapsed .sidebarBrandText,
 .collapsed .navLabel,
 .collapsed .groupToggle > svg:last-child {
   display: none;
@@ -550,7 +510,7 @@
     height: 100dvh;
     grid-column: auto;
     grid-row: auto;
-    padding-top: max(20px, env(safe-area-inset-top));
+    padding-top: max(10px, env(safe-area-inset-top));
     padding-bottom: max(14px, env(safe-area-inset-bottom));
     transform: translateX(-105%);
   }
@@ -569,13 +529,6 @@
     cursor: default;
   }
 
-  .collapsed .sidebarBrand {
-    justify-content: flex-start;
-    padding-right: 8px;
-    padding-left: 8px;
-  }
-
-  .collapsed .sidebarBrandText,
   .collapsed .navLabel,
   .collapsed .groupToggle > svg:last-child {
     display: initial;

@@ -51,7 +51,7 @@ describe('AdminLoginPage', () => {
     expect(screen.queryByText('Admin sign in')).not.toBeInTheDocument();
     expect(screen.queryByRole('img', { name: 'Ztalent Coder' })).not.toBeInTheDocument();
     expect(screen.getByText('Sign in to your account to continue')).toBeInTheDocument();
-    expect(screen.getByLabelText('Email')).toHaveAttribute('type', 'email');
+    expect(screen.getByLabelText('Email or username')).toHaveAttribute('type', 'text');
     expect(screen.getByLabelText('Password')).toHaveAttribute('type', 'password');
     expect(screen.queryByRole('button', { name: 'Reveal password' })).not.toBeInTheDocument();
   });
@@ -59,7 +59,7 @@ describe('AdminLoginPage', () => {
   it('floats labels on focus and value, and resets them when fields are cleared', async () => {
     const user = userEvent.setup();
     renderLogin();
-    const email = screen.getByLabelText('Email');
+    const email = screen.getByLabelText('Email or username');
     const password = screen.getByLabelText('Password');
 
     await user.click(email);
@@ -101,7 +101,7 @@ describe('AdminLoginPage', () => {
       code: 'INVALID_CREDENTIALS',
     }));
     renderLogin();
-    await user.type(screen.getByLabelText('Email'), 'admin@example.test');
+    await user.type(screen.getByLabelText('Email or username'), 'admin@example.test');
     await user.type(screen.getByLabelText('Password'), 'incorrect');
     let dismissToast;
     const realSetTimeout = window.setTimeout.bind(window);
@@ -117,7 +117,7 @@ describe('AdminLoginPage', () => {
       await Promise.resolve();
     });
 
-    expect(screen.getByRole('alert')).toHaveTextContent('The email or password is incorrect.');
+    expect(screen.getByRole('alert')).toHaveTextContent('The email, username, or password is incorrect.');
     expect(screen.queryByText('Sensitive server diagnostic')).not.toBeInTheDocument();
     expect(timeout).toHaveBeenCalledWith(expect.any(Function), 3000);
     expect(dismissToast).toBeTypeOf('function');
@@ -130,7 +130,7 @@ describe('AdminLoginPage', () => {
     const request = deferred();
     login.mockReturnValue(request.promise);
     renderLogin();
-    await user.type(screen.getByLabelText('Email'), 'admin@example.test');
+    await user.type(screen.getByLabelText('Email or username'), 'admin@example.test');
     await user.type(screen.getByLabelText('Password'), 'correct-password');
     await user.click(screen.getByRole('button', { name: 'Login' }));
 
@@ -150,7 +150,7 @@ describe('AdminLoginPage', () => {
       pathname: '/admin/login',
       state: { from: { pathname: '/admin/manage/projects' } },
     });
-    await user.type(screen.getByLabelText('Email'), 'admin@example.test');
+    await user.type(screen.getByLabelText('Email or username'), 'admin@example.test');
     await user.type(screen.getByLabelText('Password'), 'correct-password');
     await user.click(screen.getByRole('button', { name: 'Login' }));
     expect(await screen.findByRole('heading', { name: 'Requested destination' })).toBeInTheDocument();

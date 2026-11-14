@@ -10,7 +10,7 @@ import { HttpError } from '../utils/http-error.js';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const MAX_IMAGE_PIXELS = 40_000_000;
-const CONTENT_ROLES = ['SUPER_ADMIN', 'EDITOR'];
+const CONTENT_ROLES = ['SUPER_ADMIN', 'ASSISTANT_ADMIN', 'EDITOR'];
 const IMAGE_RESOURCES = new Set([
   'company-profile',
   'business-areas',
@@ -67,8 +67,18 @@ async function decodeAndSanitizeImage(buffer) {
 
 async function isImageReferenced(prisma, url) {
   const references = await Promise.all([
-    prisma.companyProfile.findFirst({ where: { logoUrl: url }, select: { id: true } }),
-    prisma.companyProfile.findFirst({ where: { homeIntroImageUrl: url }, select: { id: true } }),
+    prisma.companyProfile.findFirst({
+      where: {
+        OR: [
+          { logoUrl: url },
+          { homeIntroImageUrl: url },
+          { homeHeroImage1Url: url },
+          { homeHeroImage2Url: url },
+          { homeHeroImage3Url: url },
+        ],
+      },
+      select: { id: true },
+    }),
     prisma.businessArea.findFirst({ where: { imageUrl: url }, select: { id: true } }),
     prisma.project.findFirst({ where: { imageUrl: url }, select: { id: true } }),
     prisma.project.findFirst({ where: { galleryImages: { some: { imageUrl: url } } }, select: { id: true } }),

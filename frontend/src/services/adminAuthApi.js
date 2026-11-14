@@ -33,10 +33,10 @@ async function requestAdminAuth(path, options = {}) {
   return body;
 }
 
-export function loginAdmin(email, password) {
+export function loginAdmin(identifier, password) {
   return requestAdminAuth('login', {
     method: 'POST',
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ identifier, password }),
   }).then(requireAdminResponse);
 }
 
@@ -59,8 +59,9 @@ function requireAdminResponse(body) {
     body?.status !== 'success' ||
     !admin ||
     typeof admin.id !== 'string' ||
+    typeof admin.username !== 'string' ||
     typeof admin.name !== 'string' ||
-    typeof admin.email !== 'string' ||
+    (admin.email !== null && typeof admin.email !== 'string') ||
     typeof admin.role !== 'string'
   ) {
     throw new AdminAuthApiError(502, 'INVALID_RESPONSE');

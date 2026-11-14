@@ -12,12 +12,13 @@ import { validateAdminLogin } from '../validators/admin-login.js';
 const SESSION_DURATION_MS = 8 * 60 * 60 * 1000;
 
 function invalidCredentials() {
-  return new HttpError(401, 'INVALID_CREDENTIALS', 'Invalid email or password.');
+  return new HttpError(401, 'INVALID_CREDENTIALS', 'Invalid email, username, or password.');
 }
 
 function safeAdminDetails(admin) {
   return {
     id: admin.id,
+    username: admin.username,
     name: admin.name,
     email: admin.email,
     role: admin.role,
@@ -25,9 +26,11 @@ function safeAdminDetails(admin) {
 }
 
 export async function loginAdmin(request, response) {
-  const { email, password } = validateAdminLogin(request.body);
+  const { identifier, identifierType, password } = validateAdminLogin(request.body);
   const prisma = request.app.locals.prisma;
-  const admin = await prisma.adminUser.findUnique({ where: { email } });
+  const admin = await prisma.adminUser.findUnique({
+    where: { [identifierType]: identifier },
+  });
 
   if (
     !admin ||

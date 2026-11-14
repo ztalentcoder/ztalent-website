@@ -53,7 +53,12 @@ async function createFixture(t, { role = 'EDITOR' } = {}) {
       update: async () => ({}),
     },
     companyProfile: {
-      findFirst: async ({ where }) => references.has(where.logoUrl || where.homeIntroImageUrl) ? { id: 'record' } : null,
+      findFirst: async ({ where }) => {
+        const urls = where.OR
+          ? where.OR.map((reference) => Object.values(reference)[0])
+          : [where.logoUrl, where.homeIntroImageUrl];
+        return urls.some((url) => references.has(url)) ? { id: 'record' } : null;
+      },
     },
     businessArea: { findFirst: async ({ where }) => references.has(where.imageUrl) ? { id: 'record' } : null },
     project: {

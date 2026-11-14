@@ -4,6 +4,7 @@ import PublicLayout from '../layouts/PublicLayout.jsx';
 import AdminDashboardPage from '../pages/admin/AdminDashboardPage.jsx';
 import AdminContentPage from '../pages/admin/AdminContentPage.jsx';
 import AdminLoginPage from '../pages/admin/AdminLoginPage.jsx';
+import AdminSettingsPage from '../pages/admin/AdminSettingsPage.jsx';
 import BusinessAreaServicesManager from '../pages/admin/BusinessAreaServicesManager.jsx';
 import { RedirectAuthenticatedAdmin, RequireAdmin } from './AdminRouteGuards.jsx';
 import AboutPage from '../pages/public/AboutPage.jsx';
@@ -44,7 +45,7 @@ export default function AppRoutes() {
         <Route element={<RequireAdmin />}>
           <Route path="dashboard" element={<AdminDashboardPage />} />
           <Route path="company-profile" element={<AdminContentPage resource="company-profile" />} />
-          <Route path="settings" element={<section><h1>Settings</h1><p>Settings are not available yet.</p></section>} />
+          <Route path="settings" element={<AdminSettingsPage />} />
           <Route path="academic" element={<BusinessAreaServicesManager area="academic" />} />
           <Route path="tech-solutions" element={<BusinessAreaServicesManager area="tech-solutions" />} />
           <Route path="data-ai" element={<BusinessAreaServicesManager area="data-ai" />} />

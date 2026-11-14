@@ -1587,6 +1587,9 @@ test('company profile singleton supports a validated create-or-update and includ
         name: 'ZTalent',
         email: 'INFO@ZTALENT.EXAMPLE',
         homeIntroImageUrl: '/uploads/images/company/123e4567-e89b-42d3-a456-426614174000.jpg',
+        homeHeroImage1Url: '/uploads/images/company/123e4567-e89b-42d3-a456-426614174001.jpg',
+        homeHeroImage2Url: '/uploads/images/company/123e4567-e89b-42d3-a456-426614174002.jpg',
+        homeHeroImage3Url: '/uploads/images/company/123e4567-e89b-42d3-a456-426614174003.jpg',
       }),
     });
     assert.equal(response.status, 200);
@@ -1597,6 +1600,9 @@ test('company profile singleton supports a validated create-or-update and includ
         name: 'ZTalent',
         email: 'info@ztalent.example',
         homeIntroImageUrl: '/uploads/images/company/123e4567-e89b-42d3-a456-426614174000.jpg',
+        homeHeroImage1Url: '/uploads/images/company/123e4567-e89b-42d3-a456-426614174001.jpg',
+        homeHeroImage2Url: '/uploads/images/company/123e4567-e89b-42d3-a456-426614174002.jpg',
+        homeHeroImage3Url: '/uploads/images/company/123e4567-e89b-42d3-a456-426614174003.jpg',
         socialLinks: [],
       },
     });
@@ -1616,6 +1622,9 @@ test('company profile PATCH validates and updates only submitted fields on the e
     hours: 'Weekdays',
     logoUrl: '/uploads/images/company/logo.jpg',
     homeIntroImageUrl: '/uploads/images/company/home.jpg',
+    homeHeroImage1Url: null,
+    homeHeroImage2Url: null,
+    homeHeroImage3Url: null,
     socialLinks: [{ platform: 'instagram', url: 'https://instagram.example/old' }],
   };
   const updates = [];
@@ -1640,6 +1649,9 @@ test('company profile PATCH validates and updates only submitted fields on the e
       ['phone', '+255 622 923 299'],
       ['email', 'ztalentcoder@gmail.com'],
       ['location', 'Zanzibar'],
+      ['homeHeroImage1Url', '/uploads/images/company/123e4567-e89b-42d3-a456-426614174001.jpg'],
+      ['homeHeroImage2Url', '/uploads/images/company/123e4567-e89b-42d3-a456-426614174002.jpg'],
+      ['homeHeroImage3Url', '/uploads/images/company/123e4567-e89b-42d3-a456-426614174003.jpg'],
     ]) {
       const response = await fetch(`${baseUrl}/api/admin/company-profile`, {
         method: 'PATCH',
@@ -1665,7 +1677,7 @@ test('company profile PATCH validates and updates only submitted fields on the e
       body: JSON.stringify({ email: 'not-an-email' }),
     });
     assert.equal(invalidResponse.status, 400);
-    assert.equal(updates.length, 4);
+    assert.equal(updates.length, 7);
 
     const unauthorizedResponse = await fetch(`${baseUrl}/api/admin/company-profile`, {
       method: 'PATCH',
@@ -1673,7 +1685,7 @@ test('company profile PATCH validates and updates only submitted fields on the e
       body: JSON.stringify({ phone: '+255 000 000 000' }),
     });
     assert.equal(unauthorizedResponse.status, 401);
-    assert.equal(updates.length, 4);
+    assert.equal(updates.length, 7);
   });
 
   assert.equal(profile.name, 'Ztalent Coder');
@@ -1681,6 +1693,9 @@ test('company profile PATCH validates and updates only submitted fields on the e
   assert.equal(profile.location, 'Zanzibar');
   assert.equal(profile.logoUrl, '/uploads/images/company/logo.jpg');
   assert.equal(profile.homeIntroImageUrl, '/uploads/images/company/home.jpg');
+  assert.equal(profile.homeHeroImage1Url, '/uploads/images/company/123e4567-e89b-42d3-a456-426614174001.jpg');
+  assert.equal(profile.homeHeroImage2Url, '/uploads/images/company/123e4567-e89b-42d3-a456-426614174002.jpg');
+  assert.equal(profile.homeHeroImage3Url, '/uploads/images/company/123e4567-e89b-42d3-a456-426614174003.jpg');
   assert.equal(profile.socialLinks[0].url, 'https://instagram.example/old');
 });
 

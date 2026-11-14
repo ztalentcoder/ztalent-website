@@ -76,6 +76,7 @@ const heroSlides = [
     description: () => 'We harness the power of data and artificial intelligence to uncover insights, automate processes, and build smarter solutions for real-world challenges.',
   },
 ];
+const heroImageFields = ['homeHeroImage1Url', 'homeHeroImage2Url', 'homeHeroImage3Url'];
 
 function getAreaIcon(name) {
   const normalizedName = name.toLowerCase();
@@ -185,6 +186,15 @@ export default function HomePage() {
   const [introImageFailed, setIntroImageFailed] = useState(false);
   const [activeHeroSlide, setActiveHeroSlide] = useState(0);
   const [heroSlideInteraction, setHeroSlideInteraction] = useState(0);
+  const [failedHeroImages, setFailedHeroImages] = useState(() => new Set());
+  const heroImages = heroSlides.map((slide, index) => {
+    const configuredImage = getPublicImageUrl(company?.[heroImageFields[index]]);
+    return configuredImage && !failedHeroImages.has(configuredImage) ? configuredImage : slide.image;
+  });
+
+  useEffect(() => {
+    setFailedHeroImages(new Set());
+  }, [company?.homeHeroImage1Url, company?.homeHeroImage2Url, company?.homeHeroImage3Url]);
 
   function handleHeroPointerMove(event) {
     const supportsFinePointer = window.matchMedia?.('(hover: hover) and (pointer: fine)').matches;
@@ -226,14 +236,23 @@ export default function HomePage() {
         {heroSlides.map((slide, index) => (
           <div
             className={`${styles.heroImage} ${index === activeHeroSlide ? styles.heroImageActive : ''}`}
-            key={slide.image}
+            key={slide.label}
             style={{
-              backgroundImage: `url("${slide.image}")`,
+              '--hero-image-url': `url("${heroImages[index]}")`,
               '--hero-image-position': slide.imagePosition,
               '--hero-image-position-mobile': slide.mobileImagePosition,
             }}
             aria-hidden="true"
-          />
+          >
+            <img
+              className={styles.heroImagePhoto}
+              src={heroImages[index]}
+              alt=""
+              onError={() => setFailedHeroImages((current) => (
+                current.has(heroImages[index]) ? current : new Set([...current, heroImages[index]])
+              ))}
+            />
+          </div>
         ))}
         <div className={styles.heroContent}>
           <div className={styles.heroCopy} key={activeHeroSlide}>
@@ -251,7 +270,7 @@ export default function HomePage() {
               aria-label={`Show slide ${index + 1}: ${slide.label}`}
               aria-pressed={index === activeHeroSlide}
               className={index === activeHeroSlide ? styles.heroIndicatorActive : ''}
-              key={slide.image}
+              key={slide.label}
               onClick={() => {
                 setActiveHeroSlide(index);
                 setHeroSlideInteraction((interaction) => interaction + 1);

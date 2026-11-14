@@ -5,7 +5,7 @@ import styles from './AdminLoginPage.module.css';
 
 function getLoginErrorMessage(error) {
   if (error?.code === 'INVALID_CREDENTIALS' || error?.status === 401) {
-    return 'The email or password is incorrect. Please try again.';
+    return 'The email, username, or password is incorrect. Please try again.';
   }
   if (error?.code === 'RATE_LIMITED' || error?.status === 429) {
     return 'Too many sign-in attempts. Please wait a moment and try again.';
@@ -43,12 +43,12 @@ export default function AdminLoginPage() {
   const { login } = useAdminAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const [email, setEmail] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [toast, setToast] = useState('');
-  const floatingEmail = Boolean(email);
+  const floatingIdentifier = Boolean(identifier);
   const floatingPassword = Boolean(password);
 
   useEffect(() => {
@@ -64,7 +64,7 @@ export default function AdminLoginPage() {
     setSubmitting(true);
     setToast('');
     try {
-      await login(email, password);
+      await login(identifier, password);
       setPassword('');
       const requestedPath = location.state?.from?.pathname;
       navigate(requestedPath?.startsWith('/admin/') && requestedPath !== '/admin/login'
@@ -89,21 +89,21 @@ export default function AdminLoginPage() {
         <h1 id="admin-login-title">Welcome back</h1>
         <p className={styles.description}>Sign in to your account to continue</p>
         <form className={styles.form} onSubmit={handleSubmit}>
-          <div className={`${styles.field} ${floatingEmail ? styles.floating : ''}`}>
+          <div className={`${styles.field} ${floatingIdentifier ? styles.floating : ''}`}>
             <input
-              id="admin-email"
-              name="email"
-              type="email"
+              id="admin-identifier"
+              name="identifier"
+              type="text"
               autoComplete="username"
               autoCapitalize="none"
               spellCheck="false"
               placeholder=" "
               required
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
+              value={identifier}
+              onChange={(event) => setIdentifier(event.target.value)}
               disabled={submitting}
             />
-            <label htmlFor="admin-email">Email</label>
+            <label htmlFor="admin-identifier">Email or username</label>
           </div>
           <div className={`${styles.field} ${styles.passwordField} ${floatingPassword ? styles.floating : ''}`}>
             <input

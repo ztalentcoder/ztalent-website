@@ -70,6 +70,27 @@ describe('HomePage business area images', () => {
 });
 
 describe('HomePage hero slideshow', () => {
+  it('uses the three separately configured company hero images and falls back when one fails', () => {
+    companyState.company = {
+      homeHeroImage1Url: 'https://images.example.test/hero-one.webp',
+      homeHeroImage2Url: 'https://images.example.test/hero-two.webp',
+      homeHeroImage3Url: 'https://images.example.test/hero-three.webp',
+    };
+    const { container } = render(<MemoryRouter><HomePage /></MemoryRouter>);
+    const slides = [...container.querySelectorAll('#home > div[class*="heroImage"]')];
+
+    expect(slides).toHaveLength(3);
+    expect(slides.map((slide) => slide.querySelector('img').getAttribute('src'))).toEqual([
+      'https://images.example.test/hero-one.webp',
+      'https://images.example.test/hero-two.webp',
+      'https://images.example.test/hero-three.webp',
+    ]);
+
+    fireEvent.error(slides[1].querySelector('img'));
+    expect(slides[1].querySelector('img')).toHaveAttribute('src', '/images/image2.jpg');
+    expect(slides[0].querySelector('img')).toHaveAttribute('src', 'https://images.example.test/hero-one.webp');
+  });
+
   it('tilts only the background layers with mouse position and resets on pointer leave', () => {
     const originalMatchMedia = window.matchMedia;
     window.matchMedia = vi.fn((query) => ({ matches: query.includes('pointer: fine') }));

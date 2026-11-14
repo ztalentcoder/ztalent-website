@@ -109,6 +109,9 @@ function serializeCompanyProfile(profile) {
     hours: profile.hours,
     logoUrl: profile.logoUrl,
     homeIntroImageUrl: profile.homeIntroImageUrl,
+    homeHeroImage1Url: profile.homeHeroImage1Url,
+    homeHeroImage2Url: profile.homeHeroImage2Url,
+    homeHeroImage3Url: profile.homeHeroImage3Url,
     socialLinks: (profile.socialLinks ?? []).map(({ platform, url }) => ({ platform, url })),
   };
 }
@@ -373,6 +376,9 @@ export function createPublicContentRouter() {
         hours: true,
         logoUrl: true,
         homeIntroImageUrl: true,
+        homeHeroImage1Url: true,
+        homeHeroImage2Url: true,
+        homeHeroImage3Url: true,
         socialLinks: {
           where: { isActive: true },
           select: { platform: true, url: true },

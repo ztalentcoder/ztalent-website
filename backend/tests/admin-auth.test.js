@@ -8,6 +8,7 @@ const password = '  unchanged password  ';
 const passwordHash = await hashPassword(password);
 const admin = {
   id: 'admin-id',
+  username: 'admin',
   name: 'Admin User',
   email: 'admin@example.com',
   passwordHash,
@@ -111,6 +112,7 @@ test('successful login creates a hashed-token session and returns safe admin inf
         status: 'success',
         admin: {
           id: admin.id,
+          username: admin.username,
           name: admin.name,
           email: admin.email,
           role: admin.role,
@@ -183,7 +185,7 @@ test('unknown, incorrect-password, and inactive-account failures use one generic
         body: {
           error: {
             code: 'INVALID_CREDENTIALS',
-            message: 'Invalid email or password.',
+            message: 'Invalid email, username, or password.',
           },
         },
         cookie: null,
@@ -193,7 +195,7 @@ test('unknown, incorrect-password, and inactive-account failures use one generic
         body: {
           error: {
             code: 'INVALID_CREDENTIALS',
-            message: 'Invalid email or password.',
+            message: 'Invalid email, username, or password.',
           },
         },
         cookie: null,
@@ -203,7 +205,7 @@ test('unknown, incorrect-password, and inactive-account failures use one generic
         body: {
           error: {
             code: 'INVALID_CREDENTIALS',
-            message: 'Invalid email or password.',
+            message: 'Invalid email, username, or password.',
           },
         },
         cookie: null,
@@ -225,6 +227,7 @@ test('missing, empty, malformed, and unexpected login fields return HTTP 400', a
     {},
     { email: 'admin@example.com' },
     { password },
+    { identifier: 'invalid username!', password },
     { email: 123, password },
     { email: 'admin@example.com', password: 123 },
     { email: '', password },
@@ -241,6 +244,15 @@ test('missing, empty, malformed, and unexpected login fields return HTTP 400', a
       assert.equal(response.status, 400);
       assert.ok(['INVALID_JSON', 'VALIDATION_ERROR'].includes(body.error.code));
     }
+  });
+
+  test('login accepts an administrator username while preserving email login', async () => {
+    const { app, calls } = createLoginTestApp();
+    await withServer(app, async (baseUrl) => {
+      const response = await postLogin(baseUrl, { identifier: ' ADMIN ', password });
+      assert.equal(response.status, 200);
+      assert.deepEqual(calls.findUnique, [{ where: { username: 'admin' } }]);
+    });
   });
 
   assert.equal(calls.findUnique.length, 0);

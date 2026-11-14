@@ -53,6 +53,9 @@ test('public company profile exposes only allowlisted contact fields and active 
           hours: 'Weekdays',
           logoUrl: 'https://example.test/logo.png',
           homeIntroImageUrl: '/uploads/images/company/123e4567-e89b-42d3-a456-426614174000.jpg',
+          homeHeroImage1Url: '/uploads/images/company/hero-one.jpg',
+          homeHeroImage2Url: '/uploads/images/company/hero-two.jpg',
+          homeHeroImage3Url: '/uploads/images/company/hero-three.jpg',
           passwordHash: 'secret',
           socialLinks: [
             { platform: 'instagram', url: 'https://www.instagram.com/ztalentcoder/', isActive: true },
@@ -79,6 +82,9 @@ test('public company profile exposes only allowlisted contact fields and active 
         hours: 'Weekdays',
         logoUrl: 'https://example.test/logo.png',
         homeIntroImageUrl: '/uploads/images/company/123e4567-e89b-42d3-a456-426614174000.jpg',
+        homeHeroImage1Url: '/uploads/images/company/hero-one.jpg',
+        homeHeroImage2Url: '/uploads/images/company/hero-two.jpg',
+        homeHeroImage3Url: '/uploads/images/company/hero-three.jpg',
         socialLinks: [
           { platform: 'instagram', url: 'https://www.instagram.com/ztalentcoder/' },
           { platform: 'facebook', url: 'https://www.facebook.com/ztalentcoder' },

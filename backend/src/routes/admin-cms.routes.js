@@ -4,7 +4,7 @@ import { requireAdminRole } from '../middleware/require-admin-role.js';
 import { HttpError } from '../utils/http-error.js';
 import { DEFAULT_ABOUT_PAGE_CONTENT, validateAboutPageContent } from '../services/about-page-content.js';
 
-const CONTENT_ROLES = ['SUPER_ADMIN', 'EDITOR'];
+const CONTENT_ROLES = ['SUPER_ADMIN', 'ASSISTANT_ADMIN', 'EDITOR'];
 const CONTENT_STATUSES = ['DRAFT', 'PUBLISHED', 'ARCHIVED'];
 const MESSAGE_STATUSES = ['NEW', 'READ', 'REPLIED', 'ARCHIVED'];
 const COURSE_LEVELS = ['BEGINNER', 'INTERMEDIATE', 'ADVANCED'];
@@ -517,6 +517,9 @@ const companyProfileFields = {
   hours: { type: 'string', max: 160, nullable: true },
   logoUrl: { type: 'url', max: 2048, nullable: true, managedImagePath: true },
   homeIntroImageUrl: { type: 'url', max: 2048, nullable: true, managedImagePath: true },
+  homeHeroImage1Url: { type: 'url', max: 2048, nullable: true, managedImagePath: true },
+  homeHeroImage2Url: { type: 'url', max: 2048, nullable: true, managedImagePath: true },
+  homeHeroImage3Url: { type: 'url', max: 2048, nullable: true, managedImagePath: true },
 };
 
 const socialLinkFields = {

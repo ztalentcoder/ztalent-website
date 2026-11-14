@@ -7,6 +7,7 @@ const sessionToken = 'a'.repeat(64);
 const sessionTokenHash = hashSessionToken(sessionToken);
 const admin = {
   id: 'admin-id',
+  username: 'admin',
   name: 'Admin User',
   email: 'admin@example.com',
   role: 'SUPER_ADMIN',
@@ -75,6 +76,7 @@ test('valid session returns only safe admin fields and updates last-seen time', 
       status: 'success',
       admin: {
         id: admin.id,
+        username: admin.username,
         name: admin.name,
         email: admin.email,
         role: admin.role,
@@ -92,6 +94,7 @@ test('valid session returns only safe admin fields and updates last-seen time', 
         adminUser: {
           select: {
             id: true,
+            username: true,
             name: true,
             email: true,
             role: true,

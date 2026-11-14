@@ -1,4 +1,5 @@
 import { validateAdminLogin } from '../validators/admin-login.js';
+import { usernameFromEmail, requireAdminUsername } from '../validators/admin-username.js';
 import { hashPassword } from '../utils/password.js';
 
 export class InitialAdminProvisioningError extends Error {
@@ -26,8 +27,15 @@ export async function provisionInitialAdmin(prisma, input) {
   let credentials;
   try {
     credentials = validateAdminLogin({ email: input.email, password: input.password });
+    if (credentials.identifierType !== 'email') throw new Error('Invalid email.');
   } catch {
     throw new InitialAdminProvisioningError('INVALID_INPUT', 'A valid name, email, and password are required.');
+  }
+  let username;
+  try {
+    username = requireAdminUsername(input.username ?? usernameFromEmail(credentials.identifier));
+  } catch {
+    throw new InitialAdminProvisioningError('INVALID_INPUT', 'A valid username, name, email, and password are required.');
   }
 
   return prisma.$transaction(async (transaction) => {
@@ -43,12 +51,14 @@ export async function provisionInitialAdmin(prisma, input) {
     return transaction.adminUser.create({
       data: {
         name,
-        email: credentials.email,
+        username,
+        email: credentials.identifier,
         passwordHash,
         role: 'SUPER_ADMIN',
       },
       select: {
         id: true,
+        username: true,
         name: true,
         email: true,
         role: true,

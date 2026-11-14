@@ -43,6 +43,9 @@ beforeEach(() => {
     hours: 'Weekdays',
     logoUrl: null,
     homeIntroImageUrl: null,
+    homeHeroImage1Url: null,
+    homeHeroImage2Url: null,
+    homeHeroImage3Url: null,
   };
   persistedSocialLinks = [
     { id: 'instagram-id', platform: 'instagram', url: 'https://instagram.com/old', sortOrder: 0, isActive: true },
@@ -78,6 +81,9 @@ beforeEach(() => {
   api.uploadAdminImage.mockResolvedValue({
     url: '/uploads/images/company/123e4567-e89b-42d3-a456-426614174000.jpg',
   });
+  api.uploadAdminImage.mockImplementation(async (_resource, file) => ({
+    url: `/uploads/images/company/${file.name}`,
+  }));
   api.updateCompanyProfile.mockImplementation(async (body) => ({
     item: { id: 1, name: 'Ztalent Coder', ...body },
   }));
@@ -117,7 +123,7 @@ describe('Company Profile home intro image', () => {
     await user.click(screen.getByRole('button', { name: 'Save profile' }));
 
     await waitFor(() => expect(api.patchCompanyProfile).toHaveBeenCalledWith(expect.objectContaining({
-      homeIntroImageUrl: '/uploads/images/company/123e4567-e89b-42d3-a456-426614174000.jpg',
+      homeIntroImageUrl: '/uploads/images/company/home-intro.jpg',
     })));
     expect(api.uploadAdminImage).toHaveBeenCalledWith(
       'company-profile',
@@ -125,6 +131,50 @@ describe('Company Profile home intro image', () => {
       expect.any(Function),
     );
     expect(await screen.findByRole('status')).toHaveTextContent('Brand assets saved.');
+  });
+});
+
+describe('Company Profile hero slider images', () => {
+  it('saves each uploaded hero image independently without patching the other profile fields', async () => {
+    const user = userEvent.setup({ applyAccept: false });
+    const fields = [
+      ['homeHeroImage1Url', 'Hero Image 1'],
+      ['homeHeroImage2Url', 'Hero Image 2'],
+      ['homeHeroImage3Url', 'Hero Image 3'],
+    ];
+
+    for (const [fieldName, label] of fields) {
+      const { unmount } = render(
+        <MemoryRouter>
+          <AdminContentPage resource="company-profile" />
+        </MemoryRouter>,
+      );
+      await screen.findByLabelText(label);
+      await user.upload(
+        screen.getByLabelText(label),
+        new File(['image'], `${fieldName}.jpg`, { type: 'image/jpeg' }),
+      );
+      await user.click(screen.getByRole('button', { name: 'Save profile' }));
+
+      await waitFor(() => expect(api.patchCompanyProfile).toHaveBeenLastCalledWith({
+        [fieldName]: `/uploads/images/company/${fieldName}.jpg`,
+      }));
+      expect(persistedProfile[fieldName]).toBe(`/uploads/images/company/${fieldName}.jpg`);
+      expect(api.uploadAdminImage).toHaveBeenLastCalledWith(
+        'company-profile',
+        expect.objectContaining({ name: `${fieldName}.jpg` }),
+        expect.any(Function),
+      );
+      unmount();
+    }
+
+    expect(persistedProfile).toMatchObject({
+      homeHeroImage1Url: '/uploads/images/company/homeHeroImage1Url.jpg',
+      homeHeroImage2Url: '/uploads/images/company/homeHeroImage2Url.jpg',
+      homeHeroImage3Url: '/uploads/images/company/homeHeroImage3Url.jpg',
+      phone: '+255 600 000 000',
+      homeIntroImageUrl: null,
+    });
   });
 });
 

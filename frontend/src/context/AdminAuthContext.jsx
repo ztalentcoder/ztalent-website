@@ -38,10 +38,10 @@ export function AdminAuthProvider({ children }) {
     void checkSession();
   }, [checkSession]);
 
-  const login = useCallback(async (email, password) => {
+  const login = useCallback(async (identifier, password) => {
     setError(null);
     try {
-      const response = await loginAdmin(email, password);
+      const response = await loginAdmin(identifier, password);
       setAdmin(response.admin);
       setStatus('authenticated');
       return response.admin;
@@ -64,14 +64,23 @@ export function AdminAuthProvider({ children }) {
     }
   }, []);
 
+  const updateAdmin = useCallback((updatedAdmin) => {
+    if (!updatedAdmin || updatedAdmin.id !== admin?.id) {
+      throw new Error('The authenticated administrator could not be updated.');
+    }
+    setAdmin(updatedAdmin);
+    setStatus('authenticated');
+  }, [admin?.id]);
+
   const value = useMemo(() => ({
     status,
     admin,
     error,
     login,
     logout,
+    updateAdmin,
     retry: checkSession,
-  }), [status, admin, error, login, logout, checkSession]);
+  }), [status, admin, error, login, logout, updateAdmin, checkSession]);
 
   return <AdminAuthContext.Provider value={value}>{children}</AdminAuthContext.Provider>;
 }

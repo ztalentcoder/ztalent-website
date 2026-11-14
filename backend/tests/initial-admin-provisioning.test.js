@@ -17,6 +17,7 @@ function createPrismaStub({ count = 0 } = {}) {
             calls.createArgs = args;
             return {
               id: 'temporary-admin-id',
+              username: args.data.username,
               name: args.data.name,
               email: args.data.email,
               role: args.data.role,
@@ -40,6 +41,7 @@ test('provisions a normalized SUPER_ADMIN with a password hash and serializable 
 
   assert.deepEqual(admin, {
     id: 'temporary-admin-id',
+    username: 'admin',
     name: 'Initial Admin',
     email: 'admin@example.com',
     role: 'SUPER_ADMIN',
